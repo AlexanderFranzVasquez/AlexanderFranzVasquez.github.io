@@ -4,44 +4,174 @@
   <meta charset="UTF-8">
   <title>Alexander F. Vasquez</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <style>
     body {
-      font-family: Arial, sans-serif;
-      max-width: 800px;
-      margin: auto;
-      padding: 40px;
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      color: #222;
       line-height: 1.6;
     }
-    h1 { margin-bottom: 0; }
-    h2 { margin-top: 40px; }
-    a { color: #0366d6; text-decoration: none; }
-    a:hover { text-decoration: underline; }
+
+    /* Hero */
+    .hero {
+      background: linear-gradient(180deg, #4e6f95, #9bb3c7);
+      color: white;
+      text-align: center;
+      padding: 80px 20px 60px;
+    }
+
+    .hero img {
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 4px solid white;
+      margin-bottom: 20px;
+    }
+
+    .hero h1 {
+      margin: 10px 0 5px;
+      font-size: 2.2rem;
+    }
+
+    .hero p {
+      max-width: 700px;
+      margin: 10px auto 0;
+      font-size: 1.1rem;
+      opacity: 0.95;
+    }
+
+    /* Content */
+    .content {
+      max-width: 900px;
+      margin: auto;
+      padding: 50px 20px;
+    }
+
+    h2 {
+      margin-top: 50px;
+      border-bottom: 2px solid #eee;
+      padding-bottom: 5px;
+    }
+
+    .project {
+      margin-top: 25px;
+    }
+
+    .project h3 {
+      margin-bottom: 5px;
+    }
+
+    a {
+      color: #0366d6;
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    .footer {
+      text-align: center;
+      padding: 40px 20px;
+      color: #666;
+      font-size: 0.9rem;
+    }
   </style>
 </head>
+
 <body>
 
-<h1>Alexander F. Vasquez</h1>
-<p>
-  Undergraduate student in Mechatronics Engineering, with an interest in control systems and optimization.
-</p>
+  <!-- HERO -->
+  <div class="hero">
+    <img src="profile.jpg" alt="Alexander F. Vasquez">
+    <h1>Alexander F. Vasquez</h1>
+    <p>
+      Undergraduate student in Mechatronics Engineering at Pontificia Universidad Católica del Perú,
+      with interests in nonlinear and optimal control, aerial and legged robotics,
+      and the implementation of control algorithms on real systems.
+    </p>
+  </div>
 
-<h2>Sobre mí</h2>
-<p>
-  Breve descripción: qué te interesa, qué estás aprendiendo,
-  qué te motiva.
-</p>
+  <!-- CONTENT -->
+  <div class="content">
 
-<h2>Trabajos / Carpeta</h2>
-<ul>
-  <li><a href="#">Proyecto 1 (próximamente)</a></li>
-  <li><a href="#">Proyecto 2 (próximamente)</a></li>
-</ul>
+    <h2>About Me</h2>
+    <p>
+      I am currently pursuing a B.S. in Mechatronics Engineering at PUCP.
+      My academic and personal projects focus on the modeling, design,
+      and control of robotic systems, particularly aerial platforms and
+      legged robots. I am especially interested in control-oriented
+      modeling and advanced control techniques with real-world implementation.
+    </p>
 
-<h2>Contacto</h2>
-<p>
-  Email: alexanderf.vasquez@pucp.edu.pe<br>
-  GitHub: <a href="https://github.com/AlexanderFranzVasquez">github.com/AlexanderFranzVasquez</a>
-</p>
+    <h2>Selected Projects</h2>
+
+    <div class="project">
+      <h3>Hybrid Ground–Aerial Robot (ATMO-Inspired)</h3>
+      <p>
+        Course project focused on the mechanical design and control considerations
+        of a transformable robot capable of operating both on the ground and in the air.
+        Inspired by recent work from Caltech on ATMO-like robotic systems.
+      </p>
+      <p>
+        <a href="https://www.nature.com/articles/s44172-025-00413-6">Reference Paper</a> ·
+        <a href="https://youtu.be/Oec5UXYrKRQ">Prototype Video</a>
+      </p>
+    </div>
+
+    <div class="project">
+      <h3>2-DOF Bicopter for Thesis</h3>
+      <p>
+        Ongoing thesis project involving the design and control of a bicopter platform
+        intended for both research and teaching advanced control concepts.
+      </p>
+      <p>
+        <a href="https://youtu.be/J__ga2Jt4DQ">
+          Model Predictive Control of a 1-DoF Bicopter (Video)
+        </a>
+      </p>
+    </div>
+
+    <div class="project">
+      <h3>ALIP-Based Control for Bipedal Robotics</h3>
+      <p>
+        Independent project studying and implementing the Angular Linear Inverted Pendulum (ALIP)
+        controller proposed by Gong and Grizzle, focusing on step-to-step dynamics
+        and simplified models for bipedal locomotion.
+      </p>
+      <p>
+        <a href="https://youtu.be/mnsQMup5kks">
+          Implementation Video
+        </a>
+      </p>
+    </div>
+
+    <h2>Teaching Experience</h2>
+    <p>
+      <strong>Teacher Assistant – Digital Design</strong><br>
+      Pontificia Universidad Católica del Perú (Aug 2024 – Present)
+    </p>
+    <p>
+      <strong>Teacher Assistant – Robotics</strong><br>
+      Pontificia Universidad Católica del Perú (Mar 2025 – Jul 2025)
+    </p>
+
+    <h2>Contact</h2>
+    <p>
+      Email: alexanderf.vasquez@pucp.edu.pe<br>
+      GitHub:
+      <a href="https://github.com/AlexanderFranzVasquez">
+        github.com/AlexanderFranzVasquez
+      </a>
+    </p>
+
+  </div>
+
+  <div class="footer">
+    © 2026 · Alexander F. Vasquez
+  </div>
 
 </body>
 </html>
