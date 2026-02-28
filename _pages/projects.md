@@ -2,10 +2,12 @@
 layout: page
 title: Projects
 permalink: /projects/
-description: A growing collection of your cool projects.
+description: This section highlights selected projects in robotics and control that I have particularly enjoyed developing.
+If you have questions about any of these projects or would like to discuss related ideas, I would be glad to connect.
+I also welcome collaborative opportunities and constructive feedback that contribute to continued academic and technical growth.s.
 nav: true
 nav_order: 3
-display_categories: [research,work, fun]
+display_categories: [Research,Work, Fun]
 horizontal: false
 ---
 
