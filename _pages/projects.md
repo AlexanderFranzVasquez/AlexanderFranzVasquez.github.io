@@ -7,7 +7,7 @@ If you have questions about any of these projects or would like to discuss relat
 I also welcome collaborative opportunities and constructive feedback that contribute to continued academic and technical growth.s.
 nav: true
 nav_order: 3
-display_categories: [Research,Work, Fun]
+display_categories: [research,work, fun]
 horizontal: false
 ---
 
