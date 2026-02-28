@@ -9,7 +9,14 @@ ninja.data = [{
     handler: () => {
       window.location.href = "/";
     },
-  },{id: "nav-cv",
+  },{id: "nav-projects",
+          title: "Projects",
+          description: "This section highlights selected projects in robotics and control that I have particularly enjoyed developing. If you have questions about any of these projects or would like to discuss related ideas, I would be glad to connect. I also welcome collaborative opportunities and constructive feedback that contribute to continued academic and technical growth.",
+          section: "Navigation",
+          handler: () => {
+            window.location.href = "/projects/";
+          },
+        },{id: "nav-cv",
           title: "CV",
           description: "",
           section: "Navigation",
