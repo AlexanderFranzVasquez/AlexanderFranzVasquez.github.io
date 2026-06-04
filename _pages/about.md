@@ -27,8 +27,6 @@ latest_posts:
   limit: 3 # leave blank to include all the blog posts
 ---
 
-I am an undergraduate Mechatronics Engineering student at Pontificia Universidad Católica del Perú (PUCP), with research interests in control systems, robotics, and nonlinear dynamics.
-
-My work focuses on the development and implementation of optimization-based and nonlinear controllers for robotic systems, including trajectory optimization and dynamic locomotion.
-
+I am an undergraduate Mechatronics Engineering student at Pontificia Universidad Católica del Perú (PUCP), with research interests at the intersection of model-based control and robot learning.
+My work focuses on how optimization-based methods such as Control Barrier Functions and Model Predictive Control can be integrated with learned models and perception pipelines to develop safe and capable controllers for autonomous robotic systems.
 I am currently preparing to pursue a PhD in Control and Robotics.
