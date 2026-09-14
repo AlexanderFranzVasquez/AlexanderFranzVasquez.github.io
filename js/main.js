@@ -46,7 +46,7 @@
 
   if (reduce) {
     if (planet) planet.classList.add('visible');
-    mascot.style.left = '88%';
+    mascot.style.left = 'auto'; mascot.style.right = '8.7%';
     mascot.style.bottom = 'calc(100vh - 203px)';
     mascot.classList.add('idle');
     showBubble(FINAL_QUESTION);
@@ -66,7 +66,7 @@
   function flyToPlanet(done) {
     if (planet) planet.classList.add('visible');
     mascot.classList.add('launching');
-    mascot.style.left = '88%';
+    mascot.style.left = 'auto'; mascot.style.right = '8.7%';
     mascot.style.bottom = 'calc(100vh - 203px)';
     setTimeout(function () {
       mascot.classList.remove('launching');
