@@ -1,56 +1,56 @@
-# Alexander F. Vasquez — sitio personal
+# Alexander F. Vasquez — personal website
 
-Este sitio fue elaborado con [Claude Code](https://claude.com/claude-code): HTML/CSS/JS plano, sin framework ni paso de compilación, pensado para cargar rápido y ser fácil de mantener.
+This site was built with [Claude Code](https://claude.com/claude-code): plain HTML/CSS/JS, no framework, no build step, designed to load fast and stay easy to maintain.
 
-## Estructura
+## Structure
 
 ```
 site/
   index.html            → Home
   projects/
-    index.html          → listado de proyectos (incluye el personaje que se asoma en cada fila)
-    atmo.html            → una página por proyecto
+    index.html          → project listing (includes the character that peeks out on each row)
+    atmo.html            → one page per project
     bicopter.html
     studies.html
     caltech-surf.html
-    _template.html       → copiar para un proyecto nuevo
+    _template.html       → copy this for a new project
   cv/
     index.html           → CV
   blog/
-    index.html           → listado del blog
-    _template.html       → copiar para un post nuevo
-  css/style.css          → estilos compartidos (todas las páginas)
-  js/main.js             → tema claro/oscuro + personaje animado (solo en Home)
+    index.html           → blog listing
+    _template.html       → copy this for a new post
+  css/style.css          → shared styles (every page)
+  js/main.js             → light/dark theme + animated character (Home only)
   assets/
     img/
-      site/               → imágenes de la home (foto de perfil, etc.)
+      site/               → home images (profile photo, etc.)
       projects/
-        <nombre>/          → imágenes solo de ese proyecto
+        <name>/            → images for that project only
       blog/
-        <nombre-post>/     → imágenes solo de ese post
+        <post-name>/        → images for that post only
     video/
-      projects/<nombre>/   → videos solo de ese proyecto
-    pdf/                  → reportes descargables
+      projects/<name>/      → videos for that project only
+    pdf/                  → downloadable reports
 ```
 
-## Si usas esto como plantilla (o le sigues pidiendo a Claude Code)
+## If you're using this as a template (or keep asking Claude Code for changes)
 
-Si le vas a pedir a una IA que agregue contenido nuevo, lo más rápido es darle la info ya organizada así, en vez de dejar que adivine:
+If you're asking an AI to add new content, it's fastest to hand it the info already organized like this, instead of letting it guess:
 
-### Para un proyecto nuevo, dale:
-- **Imagen principal** (la que va en la tarjeta del listado y sirve de portada).
-- **La pregunta del personaje**: una pregunta corta, tipo "How can we...?", relacionada al proyecto (aparece en la nube cuando el mono se asoma al pasar el mouse por la fila).
-- **La info**: título, una línea de resumen, y el contenido/texto real del proyecto (secciones, resultados, referencias si las hay).
+### For a new project, provide:
+- **Main image** (used as the listing card thumbnail / cover).
+- **The character's question**: a short question, like "How can we...?", related to the project (shows up in the speech bubble when the character peeks out on hover in the project list).
+- **The info**: title, one-line summary, and the real project content/text (sections, results, references if any).
 
-Con eso, agregar el proyecto es: copiar `projects/_template.html`, llenarlo, crear su carpeta de imágenes en `assets/img/projects/`, y agregar su fila (imagen + pregunta del mono + texto) en `projects/index.html`.
+With that, adding the project is: copy `projects/_template.html`, fill it in, create its image folder under `assets/img/projects/`, and add its row (image + character's question + text) to `projects/index.html`.
 
-### Para un post de blog nuevo, dale:
-- **Título** y una línea de resumen.
-- **Una etiqueta** (ej. RESOURCES, OPINION).
-- **El contenido** del post.
+### For a new blog post, provide:
+- **Title** and a one-line summary.
+- **A tag** (e.g. RESOURCES, OPINION).
+- **The post content**.
 
-Con eso: copiar `blog/_template.html`, llenarlo, y agregar el link en `blog/index.html`.
+With that: copy `blog/_template.html`, fill it in, and add the link in `blog/index.html`.
 
-## Cómo ver el sitio localmente
+## Viewing the site locally
 
-Abre `index.html` directamente en el navegador (doble clic). No necesita servidor.
+Open `index.html` directly in a browser (double-click). No server needed.
