@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Actuated Perception for Humanoid Robots | Alexander F. Vasquez</title>
+<meta name="description" content="Caltech SURF project: a pan-tilt actuated head for a Unitree G1 humanoid, validated on safe obstacle-avoidance tracking and precision wall-kicking.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="../index.html">A. VASQUEZ</a>
+    <nav class="nav-links" aria-label="Main navigation">
+      <a href="../index.html">Home</a>
+      <a href="index.html" class="active">Projects</a>
+      <a href="../cv/index.html">CV</a>
+      <a href="../blog/index.html">Blog</a>
+    </nav>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle light/dark theme">
+      <svg id="iconSun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      <svg id="iconMoon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" hidden><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8Z"/></svg>
+    </button>
+  </div>
+</header>
+
+<main>
+  <div class="article-head">
+    <h1>Actuated Perception for Safe Autonomous Target Following on Humanoid Robots</h1>
+    <p class="dek">A pan-tilt head that decouples camera orientation from body orientation on a Unitree G1 humanoid, validated on safe obstacle-avoidance tracking and precision wall-kicking.</p>
+  </div>
+
+  <div class="report-affil">
+    <img src="../assets/img/projects/surf/caltech-logo.webp" alt="California Institute of Technology logo">
+    <span class="sep">·</span>
+    <img src="../assets/img/projects/surf/amber-logo.webp" alt="AMBER Lab logo">
+    <div class="meta">
+      <strong>California Institute of Technology</strong>, Summer Undergraduate Research Fellowship (SURF), AMBER Lab<br>
+      Mentors: Prof. Aaron D. Ames, Dr. Junheng Li, Blake Werner
+    </div>
+  </div>
+
+  <div class="toc-block">
+    <div class="cap">Contents</div>
+    <ol>
+      <li><a href="#abstract">Abstract</a></li>
+      <li><a href="#introduction">Introduction</a></li>
+      <li><a href="#chapter1">Chapter 1: Redesign and Fabrication of the Humanoid's Head</a></li>
+      <li><a href="#chapter2">Chapter 2: Active Perception in Safe Avoidance Tracking (Task 1)</a></li>
+      <li><a href="#chapter3">Chapter 3: Active Perception in Precision Kicking (Task 2)</a></li>
+      <li><a href="#conclusions">Conclusions and Future Work</a></li>
+      <li><a href="#references">References</a></li>
+    </ol>
+  </div>
+
+  <article class="article">
+
+    <h2 id="abstract">Abstract</h2>
+    <div class="abstract-block">
+      <p>Humanoid robots performing navigation and obstacle avoidance typically rely on perception that is either external and prepared ahead of time, or fixed to the robot's body, limiting them to a single region of interest at a time. In this work, we equip a Unitree G1 humanoid with a 2-DOF pan-tilt head that decouples camera orientation from body orientation, and evaluate it on two tasks that require continuous, actuated perception of a moving target.</p>
+      <p>In the first task, the robot must track a moving ball with the head while an MPC and a CBF-QP safety filter govern body navigation around obstacles, using a color-based (HSV) and neural (YOLOv11n, YOLOE-26) detector pipeline evaluated for both detection and onboard inference latency. In the second task, we build on a prior kick-imitation policy and design a policy that decides when and where to kick, improving the direction of the baseline kick. Together with an interception planner, this achieves a continuous wall-rally kick. Using only onboard perception, the same control loop sustains a rally of 8 kicks, limited mainly by motion-induced sensing noise.</p>
+      <p>These results show that decoupling perception from body orientation through an actuated head lets a humanoid keep a target in view and act on it, across both a safety-filtered navigation task and a precision manipulation task, without relying on external infrastructure or a body-fixed viewpoint.</p>
+      <p>Ongoing work includes improving the kicking policy with adversarial motion priors, adding onboard odometry to remove the remaining ground-truth dependency, and validating both tasks on the physical pan-tilt head.</p>
+      <p><strong>Keywords:</strong> humanoid robots, actuated perception, pan-tilt, safety filters, control barrier functions, model predictive control, imitation learning.</p>
+    </div>
+
+    <h2 id="introduction">Introduction</h2>
+    <h3>Motivation and Background</h3>
+    <p>Modern humanoid locomotion increasingly relies on exteroceptive perception for tasks such as foothold planning<a class="cite" href="#ref-1">[1,2]</a>, navigation<a class="cite" href="#ref-3">[3,4]</a>, and obstacle avoidance<a class="cite" href="#ref-5">[5]</a>. Each of these tasks demands a different kind of information from the environment, and each solves that demand with a different sensing strategy.</p>
+    <p>In foothold planning, the goal is for the robot to walk over sparse footholds at varying distances, such as stairs up, stairs down, flat stones, and height-varying stones, or footholds with lateral constraints. One approach trains a locomotion policy with reinforcement learning guided by model-based references, and at deployment, the robot's pose is tracked by an external motion capture system, with elevation maps built in advance by ray-casting onto a mesh that matches the physical testbed<a class="cite" href="#ref-1">[1]</a>. A related approach follows a similar model-guided reinforcement learning strategy, and at deployment, perception is provided by an onboard depth camera mounted on the chest, pointed forward and down<a class="cite" href="#ref-2">[2]</a>.</p>
+    <p>In navigation, the robot must move through terrain such as stairs, or through spaces shared with humans and obstacles. One method trains a layered controller in two stages: a proprioceptive stabilizer first, then a navigation layer conditioned on a local heightmap; at deployment, this heightmap is built from two onboard cameras, one on the back of the hips and one on the chest, both pointing down<a class="cite" href="#ref-3">[3]</a>. Another applies a dual-layer safety filter, combining an MPC layer and a CBF layer, built around a social-semantic guidance field constructed from a semantic occupancy grid, which on a quadruped is built using an active sensing gimbal, but on the G1 humanoid is built from only a fixed, forward-facing camera and no gimbal<a class="cite" href="#ref-4">[4]</a>.</p>
+    <p>For obstacle avoidance, a predictive safety filter using an MPC-CBF formulation generates its safety constraint by solving Poisson's equation over an occupancy map; at deployment, this occupancy map is built from an overhead camera external to the robot, infrastructure fixed in the environment rather than carried by the robot<a class="cite" href="#ref-5">[5]</a>.</p>
+
+    <h3>Problem Statement and Proposed Approach</h3>
+    <div class="fig-pair">
+      <figure>
+        <img src="../assets/img/projects/surf/intro/external_perception.webp" alt="External perception: an offboard motion-capture system tracks the robot from outside" loading="lazy">
+        <figcaption>External perception: an offboard motion-capture system tracks the robot from outside.</figcaption>
+      </figure>
+      <figure>
+        <img src="../assets/img/projects/surf/intro/static_view_point.webp" alt="Onboard, body-fixed viewpoint: the sensor's field of view is a static cone relative to the body" loading="lazy">
+        <figcaption>Onboard, body-fixed viewpoint: the sensor's field of view is a static cone relative to the body.</figcaption>
+      </figure>
+    </div>
+    <p>Grouped by sensing strategy, these approaches fall into three cases: perception external to the robot, prepared ahead of time; perception onboard but with a fixed viewpoint; and perception onboard and actuated, though only on one of the two platforms it was tested on. Each case carries a distinct limitation. External perception depends on infrastructure fixed in the environment beforehand, so it cannot be deployed in real time in an uncontrolled setting. A fixed onboard viewpoint limits the robot's ability to achieve highly dynamic, long-horizon maneuvers that require planning several steps ahead.</p>
+    <p>In each case, the robot does obtain the environmental information its task requires, but only for one region of interest at a time, and only under conditions, prepared infrastructure or a body-fixed viewpoint, that do not hold once the robot is deployed in real time, in an uncontrolled environment.</p>
+
+    <h4>Main contribution</h4>
+    <p>As a solution to this, we introduce an actuated sensing module that decouples the camera's orientation from the body, allowing the robot to acquire observations independently of its body orientation. Specifically, a pan-tilt mechanism mounted on the head expands the robot's long-horizon perception by reorienting the camera toward the region of interest without requiring the body to turn. This addresses the limitation identified above by treating perception itself as an actuated degree of freedom, rather than adding a new sensor with a different fixed viewpoint.</p>
+
+    <h4>Approach</h4>
+    <p>To validate this addition, the evaluation environment must reproduce a setting where the camera has to be onboard and must continuously follow a changing region of interest: a target that moves outside the body's field of view, requiring continuous re-observation.</p>
+    <p>We build two scenarios for validation. In the first, a tracking task, the robot has three simultaneous tasks: the pan-tilt mechanism continuously tracks a ball, the body reduces the distance between the robot and the ball, and the body avoids obstacles. In the second, a kicking task, the robot has two simultaneous tasks: the pan-tilt tracks the ball, and the body decides when and where to kick the ball against a wall so as to maximize the number of kicks.</p>
+    <div class="fig-pair">
+      <figure>
+        <img src="../assets/img/projects/surf/intro/task1.webp" alt="Task 1: tracking a moving ball while reducing distance and avoiding obstacles" loading="lazy">
+        <figcaption>Task 1: tracking a moving ball while reducing distance and avoiding obstacles.</figcaption>
+      </figure>
+      <figure>
+        <img src="../assets/img/projects/surf/intro/task2.webp" alt="Task 2: tracking the ball while the body decides when and where to kick it" loading="lazy">
+        <figcaption>Task 2: tracking the ball while the body decides when and where to kick it.</figcaption>
+      </figure>
+    </div>
+
+    <h2 id="chapter1">Chapter 1: Redesign and Fabrication of the Humanoid's Head</h2>
+
+    <h3>Mechanical Design</h3>
+    <p>The mechanical design of the pan-tilt module is based on the geometry, mass, and kinematics requirements: the new head must not exceed the dimensions of the Unitree G1's original head, its total mass must be less than 3 kg, and it must have two independent degrees of freedom, pan from -100&deg; to 100&deg; and tilt from -60&deg; to 120&deg;.</p>
+    <p>The pan axis rotates about the neck's vertical axis, while the tilt axis, mounted on the pan link, orients the camera in elevation; the two axes are independent of each other, so the final camera orientation is the composition of both rotations.</p>
+    <figure class="article-fig">
+      <img src="../assets/img/projects/surf/chapter1/pan-tilt-ranges.webp" alt="Designed pan-tilt mechanism with the rotation range of each axis" loading="lazy">
+      <figcaption>Designed pan-tilt mechanism, with the rotation range of each axis.</figcaption>
+    </figure>
+    <p>The pan-tilt module mounts directly onto the G1's factory neck, so the original head can be swapped for the new one using the same mounting points, without machining the body or altering its external geometry. The interface uses 3D-printed couplers oriented at 45&deg; rather than the robot's original axes, reducing the occlusion this structure introduces on the LiDAR's field of view.</p>
+    <p>The camera's 72 g weight was not the driving load case; control quality was, since the structure and actuators need enough margin to reject gait-induced vibration without losing tracking precision. This is why we selected the AK40-10 from CubeMars<a class="cite" href="#ref-6">[6]</a>: its 4.1 N&middot;m peak torque leaves wide margin for disturbance rejection, at just 185 g per unit.</p>
+    <figure class="article-fig">
+      <img src="../assets/img/projects/surf/chapter1/head-final.webp" alt="Final pan-tilt head integrated onto the Unitree G1" loading="lazy">
+      <figcaption>Final pan-tilt head integrated onto the Unitree G1.</figcaption>
+    </figure>
+
+    <h3>Electronic Design</h3>
+    <p>The module runs on the G1's own 24 V battery output and communicates over CAN through a Jhoinrch RH02 Plus adapter<a class="cite" href="#ref-7">[7]</a>. Position sensing and environment perception reuse hardware already on the robot: the AK40-10 actuators'<a class="cite" href="#ref-6">[6]</a> integrated encoders, plus the G1's own RealSense D435i camera and Livox Mid-360 LiDAR<a class="cite" href="#ref-8">[8]</a>, relocated to the new head instead of added new.</p>
+
+    <h2 id="chapter2">Chapter 2: Active Perception in Safe Avoidance Tracking (Task 1)</h2>
+    <p>This chapter details the design of the simulation environment and the controllers for the tracking-with-obstacle-avoidance task, following a layered control paradigm in which the high level handles perception, the mid level handles navigation planning, and the low level is the locomotion policy that directly commands the robot's motors.</p>
+    <figure class="article-fig">
+      <img src="../assets/img/projects/surf/chapter2/layered-control.webp" alt="Layered control architecture" loading="lazy">
+      <figcaption>Layered control architecture: high level (perception / mission planning), mid level (trajectory planning), and low level (actuator control).</figcaption>
+    </figure>
+
+    <h3>Simulation Environment</h3>
+    <p>The simulated Unitree G1, modified with the pan-tilt head and camera, operates in an environment with obstacles (0.3 m &times; 0.3 m base, 0.5 m height) and a circular target (radius 0.11 m) that moves along the ground, simulating a region of interest the robot must continuously follow, such as another agent in a collaborative task or a reconnaissance drone guiding the robot through rubble. The task's complexity comes from the robot having three simultaneous jobs: following the object with the pan-tilt, reducing the distance to it, and avoiding obstacles, using only the head-mounted camera and LiDAR, with off-board perception ruled out.</p>
+
+    <h3>High Level: Perception</h3>
+    <p>Since two sensors are used, each has an independent task: the LiDAR detects obstacles, and the camera detects and tracks the target. For the camera's task, the first step converts image information into pan-tilt actuation commands and, in addition, commands for the mid-level control. The LiDAR's goal is to provide obstacle position information to the mid-level control, reproducing the real layered blind-zone geometry of the Livox Mid-360 sensor<a class="cite" href="#ref-8">[8]</a>.</p>
+
+    <h4>Detector: HSV and YOLO</h4>
+    <p>For the first stage, a color-based HSV detector was used: detection is efficient given the idealized MuJoCo environment's lighting and the target's characteristic orange color, and running a neural network such as YOLO during parallelized training was prohibitive for the laptop used (GTX 1650 Ti, 4 GB). To validate feasibility and the influence of latency on the controllers, the detection was also tested on a Jetson AGX Thor (70 W mode) using YOLOE-26<a class="cite" href="#ref-9">[9]</a>, which correctly detected the ball via the prompt &ldquo;orange ball,&rdquo; while YOLOv11n<a class="cite" href="#ref-10">[10]</a> could not detect it as the ball class, but could as the &ldquo;orange&rdquo; class.</p>
+    <div class="table-scroll">
+      <table>
+        <caption>Inference latency of each detector on the Jetson AGX Thor (70 W).</caption>
+        <thead><tr><th>Detector</th><th>Latency</th></tr></thead>
+        <tbody>
+          <tr><td>YOLOv11n</td><td>20-25 ms</td></tr>
+          <tr><td>YOLOE-26</td><td>30-35 ms</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Both latencies are comparable to, or exceed, the 20 ms period of the 50 Hz control loop by themselves, without counting additional transport delay or inference queuing, so a single detection can already lag the control loop by one cycle or more. The detector's goal is to provide the object's position <span>\(( X, Y, Z )\)</span>, using the factory Intel RealSense D435i depth camera relocated to the pan-tilt module.</p>
+
+    <h4>From Pixel Detection to 3D Position</h4>
+    <p>The detector outputs the ball detection as a bounding box in pixels. From this, the midpoint of the box is computed, and then its displacement with respect to the image center via a direct subtraction,</p>
+    <p>\[ x = u_b - u_c, \qquad y = v_b - v_c, \]</p>
+    <p>and then, using the camera's intrinsic focal lengths <span>\(f_x, f_y\)</span>, the ball's position in meters is computed via similar triangles,</p>
+    <p>\[ X = \frac{x\,Z}{f_x}, \qquad Y = \frac{y\,Z}{f_y}, \]</p>
+    <p>where <span>\(Z\)</span> is obtained directly from the depth sensor, without needing to estimate it geometrically.</p>
+    <figure class="article-fig">
+      <img src="../assets/img/projects/surf/chapter2/detector-output.webp" alt="From the detector's output to the object's 3D position via similar triangles" loading="lazy">
+      <figcaption>From the detector's output (bounding box in pixels) to the object's 3D position via similar triangles.</figcaption>
+    </figure>
+
+    <h4>Visual Servo Control</h4>
+    <p>This controller keeps the ball at the center of the image. Rather than using a raw pixel error, the error is defined as the angle subtended by the ball's position with respect to the camera's optical axis,</p>
+    <p>\[ e_x = \tan(\theta_{pan}) = \frac{X}{Z}, \qquad e_y = \tan(\theta_{tilt}) = \frac{Y}{Z}, \]</p>
+    <figure class="article-fig">
+      <img src="../assets/img/projects/surf/chapter2/servo-error.webp" alt="Definition of the visual servo error" loading="lazy">
+      <figcaption>Definition of the visual servo error: angle between the camera's optical axis and the estimated 3D position of the ball.</figcaption>
+    </figure>
+    <p>The controller's output is the pan-tilt update, a step proportional to the error,</p>
+    <p>\[ \begin{aligned} \theta_{pan}^{k+1} &amp;= \operatorname{clamp}\!\left(\theta_{pan}^{k} + k_p\, e_x\, \Delta t,\ \theta_{min},\ \theta_{max}\right) \\ \theta_{tilt}^{k+1} &amp;= \operatorname{clamp}\!\left(\theta_{tilt}^{k} + k_p\, e_y\, \Delta t,\ \theta_{min},\ \theta_{max}\right) \end{aligned} \]</p>
+    <p>where <span>\(k_p\)</span> is the proportional gain and <span>\(\Delta t\)</span> the control period; <span>\(\operatorname{clamp}\)</span> saturates the output to the pan-tilt's mechanical limits.</p>
+
+    <h4>Forward Kinematics: From Pelvis to Camera</h4>
+    <p>Since the target's position was obtained with respect to the camera's frame, and all controllers are developed with respect to the robot's pelvis, each of the 7 stages of the pelvis-camera chain is written as a homogeneous transformation matrix relating frame <span>\(i\)</span> to its parent <span>\(i-1\)</span>,</p>
+    <p>\[ T^{i}_{i-1} = \begin{bmatrix} \bar R_i & t_i \\ 0^\top & 1 \end{bmatrix}. \]</p>
+    <p>Chaining all 7, the camera's pose with respect to the pelvis is</p>
+    <p>\[ T^{cam}_{pelvis} = T^{waist\_yaw}_{pelvis}\, T^{waist\_roll}_{waist\_yaw}\, T^{torso}_{waist\_roll}\, T^{neck}_{torso}\, T^{pan}_{neck}\, T^{tilt}_{pan}\, T^{cam}_{tilt} = \begin{bmatrix} R^{cam}_{pelvis} & p^{cam}_{pelvis} \\ 0^\top & 1 \end{bmatrix}. \]</p>
+    <p>With <span>\(R^{cam}_{pelvis}, p^{cam}_{pelvis}\)</span> known, the target's position as measured by the camera is expressed with respect to the pelvis via the same transformation,</p>
+    <p>\[ p^{target}_{pelvis} = R^{cam}_{pelvis}\, p^{target}_{cam} + p^{cam}_{pelvis} = (b_x,\, b_y,\, b_z)^\top. \]</p>
+    <p>From this, the distance <span>\(d\)</span> and heading <span>\(\theta_{pan}\)</span> used by the mid-level Command Generator follow directly:</p>
+    <p>\[ d = \sqrt{b_x^2+b_y^2}, \qquad \theta_{pan} = \operatorname{atan2}(b_y, b_x). \]</p>
+    <figure class="article-fig">
+      <img src="../assets/img/projects/surf/chapter2/fk-cam-pelvis.webp" alt="Pelvis-camera kinematic chain" loading="lazy">
+      <figcaption>Pelvis-camera kinematic chain: local translation and rotation of each of the 7 stages.</figcaption>
+    </figure>
+
+    <h4>Obstacle Detection and Memory</h4>
+    <p>Each obstacle is obtained directly from LiDAR clustering: each scan yields, for each obstacle, its center and radius in the body frame, without estimating velocity. Association between successive scans is done by nearest neighbor (0.5 m match radius), and an obstacle is kept for up to 1 s without being seen; in the meantime, it stays at its last detected position and is not predicted forward. The list is sorted by proximity and truncated to the 30 closest obstacles before being passed to the mid level.</p>
+
+    <h3>Mid Level: Planning</h3>
+    <p>The Command Generator produces the navigation reference from the distance and heading estimated by perception, keeping the robot within a desired distance band <span>\([d_{min}, d_{max}]\)</span>, with <span>\(d_{min}=0.30\)</span> m and <span>\(d_{max}=0.50\)</span> m:</p>
+    <p>\[ d_{ref} = \operatorname{clip}(d, d_{min}, d_{max}). \]</p>
+    <p>The desired distance is then decoupled into <span>\(x_d, y_d\)</span> using the pan angle read by the encoder:</p>
+    <p>\[ x_d = (d - d_{ref}) \cos\theta_{pan}, \qquad y_d = (d - d_{ref}) \sin\theta_{pan}, \qquad \theta_d = \theta_{pan}. \]</p>
+    <p>The robot's desired heading is set to the pan angle: since the pan has a limited range, the body is also expected to contribute to the tracking, so the pan-tilt reacts fast (low inertia) while the robot's body, with greater inertia, takes longer. Rather than embedding the safety constraint directly into the MPC horizon as a single QCQP<a class="cite" href="#ref-5">[5]</a>, the controller solves, at each step, two separate and sequential QPs: first a tracking MPC with no safety constraint, then a CBF-QP filter that corrects that output to make it safe.</p>
+
+    <h4>Tracking MPC</h4>
+    <p>Since the low-level locomotion policy requires <span>\(v_x, v_y, \omega\)</span> as inputs, the robot is reduced to a single-integrator model, with state <span>\(\xi = (x, y, \theta)\)</span> and dynamics</p>
+    <p>\[ \xi_{k+1} = \xi_k + dt\, u_k, \qquad u_k = (\dot x_k, \dot y_k, \omega_k). \]</p>
+    <p>At each step the robot is taken as the origin of the frame, since its global position is not of interest, only its relative position to the target. The cost considers tracking error against the reference from the Command Generator plus control effort, subject to the robot's motion limits:</p>
+    <p>\[ \begin{aligned} \min_{u_0,\dots,u_{N-1}} \quad &amp; \sum_{k=0}^{N-1} \Big[ (\xi_k - \xi_d)^\top Q (\xi_k - \xi_d) + u_k^\top R\, u_k \Big] + (\xi_N - \xi_d)^\top Q_N (\xi_N - \xi_d) \\ \text{s.t.} \quad &amp; \xi_{k+1} = \xi_k + dt\, u_k, \qquad \xi_0 = 0 \\ &amp; -v_{max} \le u_k \le v_{max}, \qquad k = 0,\dots,N-1. \end{aligned} \]</p>
+    <p>For computation, this is translated into condensed (batch) form, leaving only the control sequence <span>\(U \in \mathbb{R}^{3N}\)</span> as the decision variable:</p>
+    <p>\[ X = \Gamma\, U, \qquad \Gamma = dt \begin{bmatrix} I_3 & 0 & \cdots & 0 \\ I_3 & I_3 & \cdots & 0 \\ \vdots & & \ddots & \vdots \\ I_3 & I_3 & \cdots & I_3 \end{bmatrix}, \]</p>
+    <p>\[ U^\top H U + 2 f^\top U, \qquad H = \Gamma^\top \bar Q\, \Gamma + \bar R, \qquad f = -\Gamma^\top \bar Q\, \mathrm{tile}(\xi_d, N). \]</p>
+    <div class="table-scroll">
+      <table>
+        <caption>Tracking MPC parameters.</caption>
+        <thead><tr><th>Parameter</th><th>Value</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td>\(N\)</td><td>20</td><td>Prediction horizon (steps)</td></tr>
+          <tr><td>\(dt\)</td><td>0.02 s</td><td>Period of one horizon step (0.4 s total)</td></tr>
+          <tr><td>\(Q\)</td><td>\(\mathrm{diag}(10, 10, 20)\)</td><td>Tracking weight on \(x,y,\theta\)</td></tr>
+          <tr><td>\(R\)</td><td>\(\mathrm{diag}(0.1, 0.1, 0.05)\)</td><td>Control-effort weight on \(\dot x,\dot y,\omega\)</td></tr>
+          <tr><td>\(Q_N\)</td><td>\(10\,Q\)</td><td>Terminal weight</td></tr>
+          <tr><td>\(v_{max}\)</td><td>\((1, 0.5, 1)\)</td><td>Velocity bound per axis (m/s, m/s, rad/s)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Unlike the combined version<a class="cite" href="#ref-5">[5]</a>, this MPC has no notion of obstacles: it only pursues the reference from the Command Generator. It is solved with OSQP: since <span>\(H\)</span> and the box bounds do not change between calls, the problem is set up once at initialization, and only <span>\(f\)</span> is updated at each cycle, with a warm start from the shifted solution of the previous cycle.</p>
+
+    <h4>CBF-QP Safety Filter</h4>
+    <p>The filter corrects only the translational part of the MPC's output, <span>\(u_{nom} = (\dot x_0^*, \dot y_0^*)\)</span>; the angular command passes directly to the policy. The correction is posed as a second QP, evaluated at the body's current position:</p>
+    <p>\[ \begin{aligned} \min_{u} \quad &amp; \lVert u - u_{nom} \rVert^2 \\ \text{s.t.} \quad &amp; \nabla h_i \cdot u + \gamma h_i \ge 0, \qquad \forall i \\ &amp; -v_{max}^{cbf} \le u \le v_{max}^{cbf} \end{aligned} \]</p>
+    <p>with <span>\(h_i = \lVert p - c_i \rVert^2 - r_i^2\)</span> and <span>\(\nabla h_i = 2(p - c_i)\)</span> for each obstacle. Since obstacles are static and evaluated at the current position rather than over a horizon, the constraint is linear in <span>\(u\)</span> and the problem is a genuine QP, with no slack variables. <span>\(\gamma=1.5\)</span> is the CBF coefficient, and <span>\(v_{max}^{cbf}=0.5\)</span> m/s bounds the correction. It is solved with OSQP, rebuilding the problem at each cycle since the number of constraints changes with the number of detected obstacles.</p>
+    <figure class="article-fig wide">
+      <img src="../assets/img/projects/surf/chapter2/task1-control-loop.webp" alt="Full Task 1 control loop: perception, planning, and locomotion policy" loading="lazy">
+      <figcaption>Full Task 1 control loop: YOLO detection and visual servo drive the pan-tilt head; the Command Generator, MPC, and CBF plan the body's motion; the locomotion policy closes the loop on the robot body.</figcaption>
+    </figure>
+
+    <h3>Low Level: Locomotion Policy</h3>
+    <p>For this task, since the policy's role is directly the robot's locomotion, the standard Unitree-mjlab walking policy is used, running at 50 Hz. The policy receives only proprioceptive variables: there is no exteroception in this observation, since environment perception is already handled by the mid level.</p>
+    <div class="table-scroll">
+      <table>
+        <caption>Observation space of the locomotion policy (proprioceptive).</caption>
+        <thead><tr><th>Term</th><th>Dim.</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td>\(\omega_{base}\)</td><td>3</td><td>Angular velocity of the base (pelvis), IMU</td></tr>
+          <tr><td>\(g_{proj}\)</td><td>3</td><td>Gravity projected in the base frame</td></tr>
+          <tr><td>\(cmd\)</td><td>3</td><td>Velocity command \((v_x, v_y, \omega_z)\)</td></tr>
+          <tr><td>\(\phi\)</td><td>2</td><td>Gait phase, \((\sin,\cos)\) of a periodic clock with fixed period</td></tr>
+          <tr><td>\(q - q_{def}\)</td><td>29</td><td>Joint position relative to the default posture</td></tr>
+          <tr><td>\(\dot q\)</td><td>29</td><td>Joint velocity</td></tr>
+          <tr><td>\(a_{t-1}\)</td><td>29</td><td>Last applied action</td></tr>
+          <tr><td><strong>Total</strong></td><td><strong>98</strong></td><td></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>The commands the policy receives are <span>\(v_x, v_y, \omega\)</span>. The standard training policy includes a curriculum for walking, expanding <span>\(v_x\)</span> and <span>\(\omega_z\)</span> in three stages as training progresses (<span>\(v_y\)</span> stays fixed at <span>\([-1.0, 1.0]\)</span> m/s throughout):</p>
+    <ul>
+      <li>Stage 1 (step 0): <span>\(v_x \in [-1.0, 1.0]\)</span> m/s, <span>\(\omega_z \in [-0.5, 0.5]\)</span> rad/s.</li>
+      <li>Stage 2 (step 5000&times;24): <span>\(v_x \in [-1.5, 2.0]\)</span> m/s, <span>\(\omega_z \in [-0.7, 0.7]\)</span> rad/s.</li>
+      <li>Stage 3 (step 10000&times;24): <span>\(v_x \in [-2.0, 3.0]\)</span> m/s, same <span>\(\omega_z\)</span> as stage 2.</li>
+    </ul>
+    <p>Once trained, the Unitree G1 can be approximated, at the command level, as a reduced single-integrator model.</p>
+
+    <h4>Reward Design</h4>
+    <p>The rewards used are those of the policy's standard task. In magnitude, the two tracking terms (weight 2.0 each) dominate, followed by the joint-limit, self-collision, and friction penalties (weight between -1.0 and -2.0), then staying upright and posture (weight 1.0), then the gait-style penalties, an order of magnitude smaller; soft landing is nearly symbolic and air time is disabled for the G1.</p>
+    <div class="table-scroll">
+      <table>
+        <caption>Reward: positive terms (tracking and posture).</caption>
+        <thead><tr><th>Term</th><th>Weight</th><th>Formula</th></tr></thead>
+        <tbody>
+          <tr><td>track_linear_velocity</td><td>2.0</td><td>\(\exp\!\left(-\dfrac{\lVert v_{xy}-v_{cmd,xy}\rVert^2 + v_z^2}{\text{std}^2}\right)\), std = 0.5</td></tr>
+          <tr><td>track_angular_velocity</td><td>2.0</td><td>\(\exp\!\left(-\dfrac{(\omega_z-\omega_{cmd,z})^2+\omega_x^2+\omega_y^2}{\text{std}^2}\right)\), std &asymp; 0.707</td></tr>
+          <tr><td>upright</td><td>1.0</td><td>\(\exp\!\left(-\dfrac{\lVert g_{proj,xy}\rVert^2}{\text{std}^2}\right)\), std &asymp; 0.447, on the torso</td></tr>
+          <tr><td>pose</td><td>1.0</td><td>\(\exp\!\left(-\overline{(q-q_{def})^2/\text{std}_v^2}\right)\)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <caption>Reward: penalties.</caption>
+        <thead><tr><th>Term</th><th>Weight</th><th>Formula</th></tr></thead>
+        <tbody>
+          <tr><td>body_ang_vel</td><td>-0.05</td><td>\(\sum \omega_{xy,torso}^2\)</td></tr>
+          <tr><td>angular_momentum</td><td>-0.02</td><td>\(\lVert L \rVert^2\)</td></tr>
+          <tr><td>dof_pos_limits</td><td>-1.0</td><td>Sum of soft-limit violations</td></tr>
+          <tr><td>action_rate_l2</td><td>-0.1</td><td>\(\sum (a_t - a_{t-1})^2\)</td></tr>
+          <tr><td>foot_clearance</td><td>-2.0</td><td>\(\sum |h_{foot}-0.1|\cdot \lVert v_{foot,xy} \rVert\)</td></tr>
+          <tr><td>foot_swing_height</td><td>-0.25</td><td>\(\sum (h_{peak}/0.1-1)^2\) on landing</td></tr>
+          <tr><td>foot_slip</td><td>-0.1</td><td>\(\sum \lVert v_{foot,xy} \rVert^2\) in contact</td></tr>
+          <tr><td>soft_landing</td><td>-1e-5</td><td>\(\sum |F_{impact}|\) on landing</td></tr>
+          <tr><td>self_collisions</td><td>-1.0</td><td>Count of internal contacts &gt;10 N (G1 only)</td></tr>
+          <tr><td>air_time</td><td>0.0</td><td>Disabled for the G1</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Results</h3>
+    <p>We simulate the full control loop in MuJoCo using the camera and the LiDAR, introducing 3 cm of noise on both the ball detection and the LiDAR. The robot avoids obstacles while tracking the ball, and reduces its distance to it over the course of the simulation.</p>
+    <figure class="article-fig">
+      <img src="../assets/img/projects/surf/chapter2/2d-plot.webp" alt="2D plot of the control loop in simulation" loading="lazy">
+      <figcaption>2D plot of the control loop in simulation: the robot avoids obstacles while tracking the ball, with 3 cm of noise added to both the camera and LiDAR detections.</figcaption>
+    </figure>
+    <figure class="article-fig">
+      <img src="../assets/img/projects/surf/chapter2/distance-plot.webp" alt="Distance between the robot and the ball over the course of the simulation" loading="lazy">
+      <figcaption>Distance between the robot and the ball over the course of the simulation.</figcaption>
+    </figure>
+
+    <h2 id="chapter3">Chapter 3: Active Perception in Precision Kicking (Task 2)</h2>
+    <p>This chapter details the simulation environment, the controller design, and the results for the second task.</p>
+
+    <h3>Task Description</h3>
+    <p>The environment consists of a 10 m wall, the robot positioned about 4 m from the wall, and a ball. The objective is for the robot to kick the ball using only onboard perception, achieving a continuous wall-rally kick: the robot must decide when to kick, where to kick, and where to move, given its distance from the wall.</p>
+    <figure class="article-fig">
+      <img src="../assets/img/projects/surf/chapter3/task2-setup.webp" alt="Task 2 setup" loading="lazy">
+      <figcaption>Task 2 setup: the robot must decide when to kick, where to kick, and where to move, given its distance from the wall.</figcaption>
+    </figure>
+
+    <h3>Previous Mentor Work</h3>
+    <p>This task builds on a previous pipeline, TaskNPoint<a class="cite" href="#ref-11">[11]</a>, in which, from collected data and kinematic retargeting, a policy is trained to imitate a kicking motion. Given that kicking motion, a trajectory estimator based on a Kalman filter with a single-integrator model predicts the ball's position, and an optimization algorithm selects when and where to kick. Because the baseline paper does not consider that the robot has to move in order to kick the ball, its experiments only have the robot wait for the ball.</p>
+    <figure class="article-fig">
+      <img src="../assets/img/projects/surf/chapter3/baseline-deployment.webp" alt="Baseline control deployment" loading="lazy">
+      <figcaption>Baseline control deployment: a trajectory estimator and motion selector/goal constructor drive the actor that commands the robot.<a class="cite" href="#ref-11">[11]</a></figcaption>
+    </figure>
+    <p>The optimization algorithm minimizes the distance between a point on the ball's estimated trajectory and the nominal contact point of the motion. Once the best point is selected, if its associated time falls within the motion's contact window, the kick is triggered. Since a motion has only one contact, the baseline randomizes that contact point during training to extend the range of reachable contact points.</p>
+    <figure class="article-fig">
+      <img src="../assets/img/projects/surf/chapter3/baseline-controller.webp" alt="Baseline optimization algorithm" loading="lazy">
+      <figcaption>Baseline optimization algorithm: selecting the best trajectory point and the corresponding kick trigger condition.</figcaption>
+    </figure>
+    <p>Since kicking with a desired direction matters, we define a kick direction angle <span>\(\alpha\)</span>, where <span>\(\alpha=0\)</span> means the robot does not need to move much, and stays stopped and waiting for the ball, reducing the risk of distribution shift, since during training the robot was only trained while stopped.</p>
+    <figure class="article-fig">
+      <img src="../assets/img/projects/surf/chapter3/kick-angle-def.webp" alt="Definition of the kick direction angle" loading="lazy">
+      <figcaption>Definition of the kick direction angle &alpha; used for data collection.</figcaption>
+    </figure>
+    <p>Across 4096 episodes with the robot stopped and the ball approaching from a random lateral position between -3 and 3 m, the outgoing kick angle distribution of the vanilla motion is skewed to the right.</p>
+    <figure class="article-fig">
+      <img src="../assets/img/projects/surf/chapter3/baseline-kick-distribution.webp" alt="Outgoing kick angle distribution of the vanilla kick motion" loading="lazy">
+      <figcaption>Outgoing kick angle distribution of the vanilla kick motion, skewed to the right.</figcaption>
+    </figure>
+
+    <h3>When/Where to Kick Policy Design</h3>
+    <p>To improve the kick's direction, we design a new policy that wraps around the kick policy, observing the ball's starting position and velocity, the robot's yaw, the lateral projection where the ball will cross the robot's line, and the time to that point. Its output is where to kick, and when to kick, given as a trigger distance.</p>
+    <figure class="article-fig">
+      <img src="../assets/img/projects/surf/chapter3/wwtk-policy.webp" alt="When/where-to-kick policy: observation and output variables" loading="lazy">
+      <figcaption>When/where-to-kick policy: observation and output variables.</figcaption>
+    </figure>
+    <p>The training rewards are: direction (the most important term, tied to the angle &alpha;), fall (to avoid kicking outside the kick policy's distribution), miss, straight (rewarding a conservative 5&deg; angle), contact with the wall, and outgoing ball velocity.</p>
+    <figure class="article-fig">
+      <img src="../assets/img/projects/surf/chapter3/wwtk-rewards.webp" alt="Reward terms used to train the when/where-to-kick policy" loading="lazy">
+      <figcaption>Reward terms used to train the when/where-to-kick policy.</figcaption>
+    </figure>
+    <p>Over 4096 environments, the trained policy achieves a mean angle of 7.8&deg;.</p>
+    <figure class="article-fig">
+      <img src="../assets/img/projects/surf/chapter3/wwtk-distribution.webp" alt="Outgoing kick angle distribution after training the when/where-to-kick policy" loading="lazy">
+      <figcaption>Outgoing kick angle distribution after training the when/where-to-kick policy.</figcaption>
+    </figure>
+
+    <h3>Control Loop Using Ground-Truth Information</h3>
+    <p>We first test the new policy using ground-truth ball position and velocity. A heuristic interception planner projects the ball's trajectory; the where-to-move point is the intersection between the robot's line and that projected trajectory. The robot is driven to that point by the MPC, always facing the wall, while the when/where-to-kick policy runs continuously and switches the robot from locomotion to kicking once the trigger distance is reached.</p>
+    <figure class="article-fig wide">
+      <img src="../assets/img/projects/surf/chapter3/gt-control-loop.webp" alt="Control loop using ground-truth ball position and velocity" loading="lazy">
+      <figcaption>Control loop using ground-truth ball position and velocity.</figcaption>
+    </figure>
+    <p>This achieves a continuous wall-rally kick, but the direction distribution is completely shifted relative to the standalone policy.</p>
+    <figure class="article-fig">
+      <img src="../assets/img/projects/surf/chapter3/gt-kick-distribution.webp" alt="Outgoing kick angle distribution with the ground-truth control loop" loading="lazy">
+      <figcaption>Outgoing kick angle distribution with the ground-truth control loop, showing a complete shift.</figcaption>
+    </figure>
+
+    <h3>Control Loop Using No Ground-Truth Information</h3>
+    <p>Relying only on onboard perception, we reuse the same visual servo controller and perception stack from Task 1, estimating the ball's position with a single-integrator Kalman filter. This still assumes perfect knowledge of the robot's own position, since the observer requires a non-inertial frame. With this loop, the robot achieves a continuous 8-kick rally.</p>
+    <figure class="article-fig wide">
+      <img src="../assets/img/projects/surf/chapter3/onboard-control-loop.webp" alt="Control loop using only onboard perception" loading="lazy">
+      <figcaption>Control loop using only onboard perception, with the ball position estimated by a single-integrator Kalman filter.</figcaption>
+    </figure>
+
+    <h2 id="conclusions">Conclusions and Future Work</h2>
+    <p>A pan-tilt mechanism was designed and fabricated. A ball detector was also evaluated in simulation, yielding latency figures that can be used to improve domain randomization during training.</p>
+    <p>In Task 1, the pan-tilt mechanism allows the robot to decouple its tasks: while the body avoids obstacles and reduces its distance to the ball, the camera independently tracks the ball, removing the need to depend on external (offboard) sensing.</p>
+    <p>In Task 2, the when/where-to-kick policy improves the direction of the standalone kick policy, and the designed control loop achieves a continuous wall-rally kick. However, when tested using the pan-tilt-based controller with onboard perception only, the result drops to 8 kicks. The main reason is the noise generated while the robot moves, since this is the main source of feedback for the robot, and controller performance degrades accordingly.</p>
+    <h3>Future Work</h3>
+    <ul>
+      <li>Improve the kicking policy using Adversarial Motion Priors (AMP)<a class="cite" href="#ref-12">[12]</a>, an approach well suited to both imitating a reference motion and achieving a continuous wall-rally kick.</li>
+      <li>Design a policy that takes control of the pan-tilt controller, to explore behaviors that yield better feedback.</li>
+      <li>Implement onboard odometry for Task 2: the Kalman filter still assumes ground-truth knowledge of the robot's own pose to compensate for its motion, which an onboard estimate would remove.</li>
+    </ul>
+
+    <p class="stub">Final report coming soon.</p>
+
+    <h2 id="references">References</h2>
+    <ol class="ref-list">
+      <li id="ref-1">Dai, M., Compton, W. D., Li, J., Yang, L., &amp; Ames, A. D. (2026). <em>Walk the PLANC: Physics-Guided RL for Agile Humanoid Locomotion on Constrained Footholds.</em> arXiv:2601.06286.</li>
+      <li id="ref-2">Crismariu, C., &amp; Cosner, R. K. (2026). <em>MARCH: Model-Assisted Reinforcement Learning for the Perceptive Control of Humanoids over Sparse Footholds.</em> arXiv:2606.10288.</li>
+      <li id="ref-3">Werner, B., Yang, L., &amp; Ames, A. D. (2025). <em>Architecture Is All You Need: Diversity-Enabled Sweet Spots for Robust Humanoid Locomotion.</em> arXiv:2510.14947.</li>
+      <li id="ref-4">Yang, L., Bena, R. M., Wilkinson, M., Bahati, G., Navarro Brenes, A., Cosner, R. K., &amp; Ames, A. D. (2026). <em>Safe-SAGE: Social-Semantic Adaptive Guidance for Safe Engagement through Laplace-Modulated Poisson Safety Functions.</em> arXiv:2603.05497.</li>
+      <li id="ref-5">Bena, R. M., Bahati, G., Werner, B., Cosner, R. K., Yang, L., &amp; Ames, A. D. (2025). <em>Geometry-Aware Predictive Safety Filters on Humanoids: From Poisson Safety Functions to CBF Constrained MPC.</em> IEEE-RAS International Conference on Humanoid Robots. arXiv:2508.11129.</li>
+      <li id="ref-6">CubeMars. (2024). <em>AK40-10 Robotic Actuator.</em> <a href="https://www.cubemars.com/product/ak40-10-robotic-actuator.html" target="_blank" rel="noopener">cubemars.com</a>.</li>
+      <li id="ref-7">Jhoinrch. (2023). <em>RH02 Plus USB to CAN FD Adapter.</em> Product datasheet.</li>
+      <li id="ref-8">Livox Technology. (2022). <em>Livox Mid-360 User Manual.</em> <a href="https://www.livoxtech.com/mid-360" target="_blank" rel="noopener">livoxtech.com</a>.</li>
+      <li id="ref-9">Wang, A., Liu, L., Chen, H., Lin, Z., Han, J., &amp; Ding, G. (2025). <em>YOLOE: Real-Time Seeing Anything.</em> arXiv:2503.07465.</li>
+      <li id="ref-10">Ultralytics. (2024). <em>Ultralytics YOLO11.</em> <a href="https://github.com/ultralytics/ultralytics" target="_blank" rel="noopener">GitHub</a>.</li>
+      <li id="ref-11">Werner, B., Demler, I., Perona, P., &amp; Ames, A. D. (2026). <em>TaskNPoint: How to Teach Your Humanoid to Hit a Backhand in Minutes.</em> arXiv:2606.26215.</li>
+      <li id="ref-12">Peng, X. B., Ma, Z., Abbeel, P., Levine, S., &amp; Kanazawa, A. (2021). <em>AMP: Adversarial Motion Priors for Stylized Physics-Based Character Control.</em> ACM Transactions on Graphics, 40(4), 1.</li>
+    </ol>
+  </article>
+
+  <a class="back-link" href="index.html">&larr; Back to Projects</a>
+</main>
+
+<footer class="footer">
+  <span>© Alexander F. Vasquez</span><span class="dot">·</span><span>Site under construction</span>
+</footer>
+
+<script src="../js/main.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    renderMathInElement(document.body, {
+      delimiters: [
+        { left: "\\[", right: "\\]", display: true },
+        { left: "\\(", right: "\\)", display: false }
+      ],
+      throwOnError: false
+    });
+  });
+</script>
+</body>
+</html>

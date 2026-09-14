@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Advanced Control &amp; Robotics Studies | Alexander F. Vasquez</title>
+<meta name="description" content="ALIP bipedal locomotion, constrained inverse kinematics, trajectory optimization, and multibody simulation.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="../index.html">A. VASQUEZ</a>
+    <nav class="nav-links" aria-label="Main navigation">
+      <a href="../index.html">Home</a>
+      <a href="index.html" class="active">Projects</a>
+      <a href="../cv/index.html">CV</a>
+      <a href="../blog/index.html">Blog</a>
+    </nav>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle light/dark theme">
+      <svg id="iconSun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      <svg id="iconMoon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" hidden><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8Z"/></svg>
+    </button>
+  </div>
+</header>
+
+<main>
+  <div class="article-head">
+    <h1>Advanced Control and Robotics Studies</h1>
+    <p class="dek">Hybrid dynamics, constrained optimization, and trajectory optimization: four independent simulation-based studies.</p>
+  </div>
+
+  <article class="article">
+    <p>This project consolidates several advanced simulation-based studies in nonlinear control, hybrid locomotion modeling, constrained inverse kinematics, and trajectory optimization. Each study focuses on mathematical modeling, numerical implementation, and simulation-based validation.</p>
+
+    <h2>1. Hybrid Locomotion Modeling: ALIP</h2>
+    <p>Implementation and study of the Angular Momentum Linear Inverted Pendulum (ALIP) model for step-to-step locomotion analysis. This implementation replicates and analyzes the reduced-order locomotion framework presented by Y. Gong and J. W. Grizzle in their work on zero dynamics and angular momentum in bipedal locomotion.</p>
+    <ul>
+      <li>Closed-form discrete dynamics</li>
+      <li>Hybrid reset map</li>
+      <li>Momentum-based foot placement control</li>
+      <li>Velocity tracking across multiple steps</li>
+      <li>2D animated walking simulation</li>
+    </ul>
+    <figure class="article-fig">
+      <img src="../assets/img/projects/studies/alip.webp" alt="ALIP step-to-step simulation" loading="lazy">
+    </figure>
+    <figure class="article-fig">
+      <video controls preload="metadata" playsinline>
+        <source src="../assets/video/projects/studies/alip.mp4" type="video/mp4">
+      </video>
+      <figcaption>2D animated walking simulation.</figcaption>
+    </figure>
+    <p><em>Reference:</em> Gong, Y., &amp; Grizzle, J. W. <em>Zero Dynamics, Pendulum Models, and Angular Momentum in Feedback Control of Bipedal Locomotion.</em></p>
+
+    <h2>2. Constrained Inverse Kinematics: Robotic Arm</h2>
+    <p>Two optimization-based IK formulations were implemented:</p>
+    <ul>
+      <li><strong>IK via Quadratic Programming (IK-QP)</strong>: linearized differential kinematics, QP formulation with constraints, regularization and smooth motion.</li>
+      <li><strong>IK via Nonlinear Programming (IK-NLP)</strong>: full nonlinear optimization, obstacle avoidance constraint, end-effector trajectory shaping.</li>
+    </ul>
+    <figure class="article-fig">
+      <img src="../assets/img/projects/studies/arm-ik.webp" alt="Manipulator trajectory with obstacle avoidance" loading="lazy">
+    </figure>
+    <div class="fig-pair">
+      <figure>
+        <video controls preload="metadata" playsinline>
+          <source src="../assets/video/projects/studies/ik-qp.mp4" type="video/mp4">
+        </video>
+        <figcaption>IK-QP: quadratic programming formulation.</figcaption>
+      </figure>
+      <figure>
+        <video controls preload="metadata" playsinline>
+          <source src="../assets/video/projects/studies/ik-nlp.mp4" type="video/mp4">
+        </video>
+        <figcaption>IK-NLP: nonlinear programming with obstacle avoidance.</figcaption>
+      </figure>
+    </div>
+
+    <h2>3. Trajectory Optimization: Direct Collocation</h2>
+    <p>Implementation and numerical study of trajectory optimization using direct collocation methods. The formulation, discretization, and nonlinear programming structure were replicated from the tutorial developed by Matthew Kelly.</p>
+    <ul>
+      <li>Discretized nonlinear dynamics</li>
+      <li>Equality constraints for system evolution</li>
+      <li>Nonlinear programming formulation</li>
+      <li>Numerical optimal control solution</li>
+    </ul>
+    <figure class="article-fig">
+      <img src="../assets/img/projects/studies/trajectory-optimization.webp" alt="Direct collocation trajectory solution" loading="lazy">
+    </figure>
+    <figure class="article-fig">
+      <video controls preload="metadata" playsinline>
+        <source src="../assets/video/projects/studies/trajectory-optimization.mp4" type="video/mp4">
+      </video>
+      <figcaption>Optimization result: direct collocation solution.</figcaption>
+    </figure>
+    <p><em>Reference:</em> Kelly, M. <em>An Introduction to Trajectory Optimization: How to Do Your Own Direct Collocation.</em></p>
+
+    <h2>4. Multibody Simulation: Self-Balancing Robot</h2>
+    <p>Dynamic modeling and PID control of a self-balancing robot, implemented in ODE45 simulation and Simscape Multibody.</p>
+    <figure class="article-fig">
+      <img src="../assets/img/projects/studies/self-balancing.webp" alt="Simscape model of the self-balancing robot" loading="lazy">
+    </figure>
+    <figure class="article-fig">
+      <video controls preload="metadata" playsinline>
+        <source src="../assets/video/projects/studies/self-balancing.mp4" type="video/mp4">
+      </video>
+      <figcaption>Simulation of the self-balancing robot.</figcaption>
+    </figure>
+
+    <h2>Technical Focus</h2>
+    <ul>
+      <li>Hybrid dynamical systems</li>
+      <li>Reduced-order locomotion models</li>
+      <li>Constrained optimization (QP / NLP)</li>
+      <li>Trajectory optimization</li>
+      <li>Multibody simulation</li>
+    </ul>
+
+    <ul class="resource-list">
+      <li>💻 <a href="https://github.com/AlexanderFranzVasquez/advanced-control-and-robotics-studies.git" target="_blank" rel="noopener">Source code (GitHub)</a></li>
+    </ul>
+  </article>
+
+  <a class="back-link" href="index.html">&larr; Back to Projects</a>
+</main>
+
+<footer class="footer">
+  <span>© Alexander F. Vasquez</span><span class="dot">·</span><span>Site under construction</span>
+</footer>
+
+<script src="../js/main.js"></script>
+</body>
+</html>

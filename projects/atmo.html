@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ATMO | Alexander F. Vasquez</title>
+<meta name="description" content="Hybrid ground-aerial robotic prototype inspired by the ATMO morphobot architecture.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="../index.html">A. VASQUEZ</a>
+    <nav class="nav-links" aria-label="Main navigation">
+      <a href="../index.html">Home</a>
+      <a href="index.html" class="active">Projects</a>
+      <a href="../cv/index.html">CV</a>
+      <a href="../blog/index.html">Blog</a>
+    </nav>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle light/dark theme">
+      <svg id="iconSun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      <svg id="iconMoon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" hidden><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8Z"/></svg>
+    </button>
+  </div>
+</header>
+
+<main>
+  <div class="article-head">
+    <h1>ATMO: Hybrid Ground-Aerial Robotic Prototype</h1>
+    <p class="dek">Course-based implementation conceptually inspired by the ATMO morphobot architecture.</p>
+  </div>
+
+  <article class="article">
+    <p>This project consisted of a course-based implementation conceptually inspired by the ATMO morphobot architecture (Mandralis et al., 2025). Rather than introducing a novel morphing mechanism, the objective was to investigate mechanical integration challenges, manufacturability constraints, and structural feasibility within an academic prototyping framework.</p>
+    <p>My primary contribution focused on the mechanical system architecture, CAD modeling, and structural design of the platform.</p>
+
+    <h2>Research Context</h2>
+    <p>The architectural concept draws inspiration from: Mandralis, I., Nemovi, R., Ramezani, A., Murray, R. M., &amp; Gharib, M. (2025). <em>ATMO: A morphobot capable of dynamic ground-air transition.</em> Communications Engineering, 4, 74.</p>
+    <p>While the published work presents a research-grade morphobot capable of dynamic transitions, this project focused on exploring the mechanical feasibility of a conceptually related architecture within the scope and constraints of a course-based prototype.</p>
+
+    <h2>Mechanical Architecture</h2>
+    <p>The platform integrates a quadrotor propulsion module, a ground support structure, a central modular electronics housing, and 3D-printed structural components. Design considerations included structural rigidity under thrust loads, weight distribution and center-of-mass alignment, modular assembly for rapid prototyping, and mechanical integration of propulsion and support mechanisms.</p>
+
+    <figure class="article-fig">
+      <img src="../assets/img/projects/atmo/cad.webp" alt="Complete CAD model of the hybrid mobility platform" loading="lazy">
+      <figcaption>Complete CAD model of the hybrid mobility platform.</figcaption>
+    </figure>
+
+    <h2>Prototype Fabrication</h2>
+    <p>A full-scale prototype was manufactured and assembled using rapid prototyping techniques. Structural components were fabricated primarily through 3D printing and integrated with propulsion hardware.</p>
+
+    <figure class="article-fig">
+      <img src="../assets/img/projects/atmo/lab.webp" alt="Prototype during laboratory assembly and integration" loading="lazy">
+      <figcaption>Physical prototype during mechanical integration.</figcaption>
+    </figure>
+
+    <h2>Experimental Evaluation</h2>
+    <p>The prototype underwent preliminary testing under controlled and outdoor conditions, including static load validation (1 kg to 9 kg), ground-to-air transition attempts, and preliminary takeoff and landing tests. Indoor testing enabled partial transition under constrained environments. Outdoor experiments highlighted stability limitations under uneven terrain and current mass distribution.</p>
+    <p>These observations provided insight into mechanical integration challenges and practical constraints associated with hybrid morphing platforms.</p>
+
+    <figure class="article-fig">
+      <img src="../assets/img/projects/atmo/field.webp" alt="Outdoor transition and preliminary flight testing" loading="lazy">
+      <figcaption>Outdoor experimental evaluation of transition attempts and flight behavior.</figcaption>
+    </figure>
+
+    <h2>Project Scope</h2>
+    <p>This was a collaborative course-based project. My primary responsibility was mechanical architecture design and CAD modeling. Electronics integration and low-level control implementation were developed by other team members.</p>
+
+    <ul class="resource-list">
+      <li>🎥 <a href="https://youtu.be/Oec5UXYrKRQ" target="_blank" rel="noopener">Video demonstration</a></li>
+    </ul>
+  </article>
+
+  <a class="back-link" href="index.html">&larr; Back to Projects</a>
+</main>
+
+<footer class="footer">
+  <span>© Alexander F. Vasquez</span><span class="dot">·</span><span>Site under construction</span>
+</footer>
+
+<script src="../js/main.js"></script>
+</body>
+</html>
