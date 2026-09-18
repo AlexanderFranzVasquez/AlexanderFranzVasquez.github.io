@@ -296,6 +296,12 @@
     <h3>Results</h3>
     <p>We simulate the full control loop in MuJoCo using the camera and the LiDAR, introducing 3 cm of noise on both the ball detection and the LiDAR. The robot avoids obstacles while tracking the ball, and reduces its distance to it over the course of the simulation.</p>
     <figure class="article-fig">
+      <div class="video-embed">
+        <iframe src="https://www.youtube-nocookie.com/embed/6M3WtbNUE3Q?start=1&end=27" title="Task 1 exploration" loading="lazy" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+      </div>
+      <figcaption>Exploration: the robot tracking the ball while avoiding obstacles.</figcaption>
+    </figure>
+    <figure class="article-fig">
       <img src="../assets/img/projects/surf/chapter2/2d-plot.webp" alt="2D plot of the control loop in simulation" loading="lazy">
       <figcaption>2D plot of the control loop in simulation: the robot avoids obstacles while tracking the ball, with 3 cm of noise added to both the camera and LiDAR detections.</figcaption>
     </figure>
@@ -355,6 +361,12 @@
 
     <h3>Control Loop Using Ground-Truth Information</h3>
     <p>We first test the new policy using ground-truth ball position and velocity. A heuristic interception planner projects the ball's trajectory; the where-to-move point is the intersection between the robot's line and that projected trajectory. The robot is driven to that point by the MPC, always facing the wall, while the when/where-to-kick policy runs continuously and switches the robot from locomotion to kicking once the trigger distance is reached.</p>
+    <figure class="article-fig">
+      <div class="video-embed">
+        <iframe src="https://www.youtube-nocookie.com/embed/IhkAZtMCxTA?start=86&end=530" title="37-kick rally with ground-truth information" loading="lazy" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+      </div>
+      <figcaption>37-kick continuous rally using ground-truth ball position and velocity.</figcaption>
+    </figure>
     <figure class="article-fig wide">
       <img src="../assets/img/projects/surf/chapter3/gt-control-loop.webp" alt="Control loop using ground-truth ball position and velocity" loading="lazy">
       <figcaption>Control loop using ground-truth ball position and velocity.</figcaption>
@@ -366,7 +378,21 @@
     </figure>
 
     <h3>Control Loop Using No Ground-Truth Information</h3>
-    <p>Relying only on onboard perception, we reuse the same visual servo controller and perception stack from Task 1, estimating the ball's position with a single-integrator Kalman filter. This still assumes perfect knowledge of the robot's own position, since the observer requires a non-inertial frame. With this loop, the robot achieves a continuous 8-kick rally.</p>
+    <p>Relying only on onboard perception, we reuse the same visual servo controller and perception stack from Task 1, estimating the ball's position with a single-integrator Kalman filter. This still assumes perfect knowledge of the robot's own position, since the observer requires a non-inertial frame. With this loop, the robot achieves continuous rallies of up to 10 kicks across trials.</p>
+    <div class="fig-pair">
+      <figure>
+        <div class="video-embed">
+          <iframe src="https://www.youtube-nocookie.com/embed/W052QwOAOUE?start=30&end=195" title="10-kick rally using only onboard perception" loading="lazy" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+        </div>
+        <figcaption>10-kick rally using only onboard perception.</figcaption>
+      </figure>
+      <figure>
+        <div class="video-embed">
+          <iframe src="https://www.youtube-nocookie.com/embed/veShM4r4mc8?start=70&end=311" title="8-kick rally using only onboard perception" loading="lazy" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+        </div>
+        <figcaption>8-kick rally using only onboard perception.</figcaption>
+      </figure>
+    </div>
     <figure class="article-fig wide">
       <img src="../assets/img/projects/surf/chapter3/onboard-control-loop.webp" alt="Control loop using only onboard perception" loading="lazy">
       <figcaption>Control loop using only onboard perception, with the ball position estimated by a single-integrator Kalman filter.</figcaption>
