@@ -1,0 +1,588 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>STRIDE Research Decision Book | Alexander F. Vasquez</title>
+<meta name="description" content="The research decision book of STRIDE: every design decision, experiment and ablation hypothesis of a course project that evaluates and corrects SAM 3D Body on NymeriaPlus video, with figures and videos.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+<style>
+  /* page-local: portrait video and two-row figures stay centred and legible */
+  .article-fig.portrait video { max-width: 380px; }
+  .article-fig + .article-fig { margin-top: 12px; }
+  .decision { border-left: 3px solid var(--line-strong); padding: 2px 0 2px 16px; margin: 18px 0 26px; }
+  .decision h4 { margin-top: 0; }
+  .decision p, .decision li { font-size: 14.5px; }
+  .tag { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); letter-spacing: 0.04em; }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="../index.html">A. VASQUEZ</a>
+    <nav class="nav-links" aria-label="Main navigation">
+      <a href="../index.html">Home</a>
+      <a href="index.html" class="active">Projects</a>
+      <a href="../cv/index.html">CV</a>
+      <a href="../blog/index.html">Blog</a>
+    </nav>
+    <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle light/dark theme">
+      <svg id="iconSun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      <svg id="iconMoon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" hidden><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8Z"/></svg>
+    </button>
+  </div>
+</header>
+
+<main>
+  <div class="article-head">
+    <h1>STRIDE: Research Decision Book</h1>
+    <p class="dek">Every design decision of the project, with its justification and the alternatives we discarded, every experiment with its result, and every ablation with the hypothesis we wrote before running it. Evaluating and correcting SAM 3D Body on NymeriaPlus video.</p>
+  </div>
+
+  <div class="report-affil">
+    <div class="meta">
+      <strong>Pontificia Universidad Católica del Perú (PUCP)</strong>, 1INF52 Deep Learning 2026-2, course project<br>
+      Team: Adhemir Rodrigo Carbajal Satalaya, Alexander Franz Vasquez Montero · Instructor: Dr. César A. Beltrán Castañón<br>
+      Summary page of the project: <a href="stride.html">STRIDE: Can a Single-Image 3D Human Pose Model Be Trusted on Daily-Life Video?</a>
+    </div>
+  </div>
+
+  <div class="toc-block">
+    <div class="cap">Contents</div>
+    <ol>
+      <li><a href="#how">How to read this book</a></li>
+      <li><a href="#context">Short context</a></li>
+      <li><a href="#sections">Sections</a></li>
+      <li><a href="#s1">1) Study and decide on the Nymeria dataset</a> · D1, D2</li>
+      <li><a href="#s2">2) Select and extract classes</a> · D3–D6</li>
+      <li><a href="#s3">3) Inference with SAM 3D Body</a> · D7–D11</li>
+      <li><a href="#s4">First study on more clips: <code>catalog_v_old</code></a> · D12–D17</li>
+      <li><a href="#phaseA">Course tasks · Phase A: teardown</a></li>
+      <li><a href="#experiments">Course tasks · Experiments</a> · E1–E6</li>
+      <li><a href="#ablations">Planned ablations</a> · A1–A13</li>
+      <li><a href="#phaseC">Phase C: domain shift and failures</a></li>
+      <li><a href="#references">References</a></li>
+    </ol>
+  </div>
+
+  <article class="article">
+
+    <h2 id="how">How to read this book</h2>
+    <p>This Research Decision Book records every design decision with its justification, the alternatives we discarded, and where an AI assistant was used. Each ablation has its hypothesis written <strong>before</strong> running it, followed by the result and whether the hypothesis held.</p>
+    <p><strong>AI assistance.</strong> We used Claude Code (Anthropic) as a coding agent. Every entry says what it did (<em>AI</em>); the decision itself and its interpretation are the team's, and ablation hypotheses are written by the team, not by the assistant.</p>
+    <p>Labels: decisions are <strong>D1, D2, …</strong> in the order they appear in this story; experiments already run are <strong>E1, E2, …</strong>; planned ablations are <strong>A1, A2, …</strong>. Figures and tables are numbered and referenced from the text.</p>
+
+    <h2 id="context">Short context</h2>
+    <p>The main problem is that motion capture is too expensive to collect enough data to feed the imitation-learning loop of humanoid robots. Because of that, one option is to use videos taken with cameras. There are two options: cameras mounted in a specific laboratory area, or videos of daily routines, with camera movement, occlusion, etc.</p>
+    <p>This project covers the second one. We work with the Nymeria dataset<a class="cite" href="#ref-3">[3]</a>, which has videos of daily routines with occlusion: 1 100 sequences (340 h) in 20 scenarios, such as cooking, housekeeping, workout, dance, hiking or playing games with a partner.</p>
+    <p>Given this dataset, the question is how to extract the trajectory of each human joint in order to build the trajectory of the whole body. For this project we use SAM 3D Body<a class="cite" href="#ref-1">[1]</a>. Because of occlusion, frame-by-frame processing and camera movement, the main research question is whether SAM 3D Body, a single-image model, can be trusted on video, and how to correct it where it fails. Specifically we ask: which trajectories are not good? How can we improve them?</p>
+
+    <h2 id="sections">Sections</h2>
+    <p>This book follows the process we have followed since the start of the project. Stages 1 and 2 answer: which data do we use? Stage 3 answers: which model, and where do we change it? The last part answers directly the tasks of the course project document: Phase A (teardown), the experiments, the ablations and Phase C.</p>
+    <ol>
+      <li>Study and decide on the Nymeria dataset: explore it, evaluate the quality of the videos, evaluate additional relevant information.</li>
+      <li>Select and extract classes: read the narrations, select the classes to study.</li>
+      <li>Inference with SAM 3D Body: study the model, test it following the repository, run the teardown; then the first study on more clips and the intervention.</li>
+    </ol>
+
+    <!-- ===================================================================================== -->
+    <h2 id="s1">1) Study and decide on the Nymeria dataset</h2>
+    <p>For each sequence, Nymeria provides video from several Aria glasses (the participant's head and wrists, and an <strong>observer</strong> who records the participant from a third-person view), audio, a narration (text that describes what the participant does), and the participant's body motion, captured with an XSens suit.</p>
+    <p>SAM 3D Body outputs the body in a specific skeleton model, <strong>MHR</strong> (Momentum Human Rig<a class="cite" href="#ref-2">[2]</a>: Meta's parametric body model, 127 joints). We decided to use NymeriaPlus<a class="cite" href="#ref-4">[4]</a> because its motion is already in that skeleton.</p>
+
+    <h3>Explore the Nymeria dataset</h3>
+    <div class="decision">
+      <h4>D1 · Challenge data: NymeriaPlus instead of Nymeria <span class="tag">2026-10-17</span></h4>
+      <ul>
+        <li><strong>Decision.</strong> Use NymeriaPlus: the observer camera (fisheye Aria glasses) and the XSens ground truth.</li>
+        <li><strong>Why.</strong> NymeriaPlus provides the ground-truth motion already fitted to MHR (127 joints), the same skeleton that SAM 3D Body outputs, so no skeleton mapping is needed. Nymeria is also outside SAM 3D Body's training and evaluation data (3DPW, AI Challenger, COCO, EgoExo4D, EgoHumans, Harmony4D, MPII, SA-1B), and its fisheye lens, moving camera and distant or occluded people make it a good domain shift (Phase C).</li>
+        <li><strong>Alternatives.</strong> The original Nymeria (XSens skeleton only): it would need a mapping between the XSens and MHR joints.</li>
+        <li><strong>AI.</strong> Helped us analyse and understand the tools of Nymeria and SAM 3D Body.</li>
+      </ul>
+    </div>
+    <p>Nymeria is not a dataset made for humanoid robots, so we have to explore its content and filter the relevant data, specifically the videos where the observer records the participant. To find them we use the narrations (below).</p>
+
+    <h3>Evaluate the quality of the videos</h3>
+    <p>We explored the quality of the videos, mainly their limitations: camera movement, occlusion, and situations we are not interested in, such as a person sitting. We concluded that occlusion and camera movement will be the most interesting challenges. A second challenge is the camera itself: the observer records with a fisheye lens, which is uncommon in the video pipelines used for imitation learning. This leads to the next decision.</p>
+    <div class="decision">
+      <h4>D2 · Undistortion to a fixed pinhole camera <span class="tag">2026-10-17</span></h4>
+      <ul>
+        <li><strong>Decision.</strong> Rectify the fisheye image to a 1024×1024 pinhole (f = 450 px, ~97° field of view), upright, and pass the exact intrinsics to SAM 3D Body.</li>
+        <li><strong>Why.</strong> SAM 3D Body expects a perspective camera; giving it the true camera matrix removes the error of estimating the field of view.</li>
+        <li><strong>Limitation.</strong> A wide field of view stretches people near the border of the image. A virtual camera that points at the person is planned as ablation A6 (Phase C).</li>
+        <li><strong>AI.</strong> Wrote the rectification with Meta's <code>projectaria_tools</code> (fisheye calibration from the recording → pinhole calibration); output size and focal length chosen with the assistant.</li>
+      </ul>
+    </div>
+
+    <h3>Evaluate additional relevant information</h3>
+    <p>Each sequence has a <strong>narration</strong> and the <strong>XSens motion</strong>. A narration is a short text written by annotators, with its start and end time, about every 5 seconds (e.g. "C is running in the backyard and then turns around"). We use them because watching 340 hours of video is not possible and each video weighs ~16 GB, while the narrations are only text: searching them tells us which sequences, and which minutes of each one, contain whole-body motion before downloading any video.</p>
+    <p>The XSens motion comes from a suit with inertial sensors (accelerometers and gyroscopes); it uses no camera. It gives the 3D pose of the whole body 240 times per second, in world coordinates, and NymeriaPlus fits it to MHR. Since it is the true trajectory of the motion, we use it as ground truth and for supervised learning. To compare it with SAM 3D Body, which predicts the pose as seen from the camera, we need three more pieces: the <strong>clock synchronisation</strong> between the suit and the observer's glasses (to pair each frame with the pose at that instant), the observer's <strong>SLAM trajectory</strong> (the glasses' own position and orientation, to bring the pose from the world into the moving camera), and the <strong>camera calibration</strong> (to project the joints onto the image).</p>
+    <p>Figure 1 checks that these three pieces fit together: the ground-truth skeleton, synchronised in time and moved into the camera with the SLAM pose, is drawn on the rectified image of D2. If any of them were wrong, the skeleton would drift from the body or lag behind the motion; in the excerpt it stays on the person while she moves.</p>
+    <figure class="article-fig wide">
+      <video src="../assets/video/projects/stride/gt_overlay_dance_salsa_01.mp4" controls muted loop playsinline preload="metadata"></video>
+      <figcaption><strong>Figure 1.</strong> Left: rectified observer frame (D2). Right: the same frame with the XSens ground truth projected on it. 10 s of <code>dance_salsa_01</code>.</figcaption>
+    </figure>
+
+    <!-- ===================================================================================== -->
+    <h2 id="s2">2) Select and extract classes</h2>
+
+    <h3>Read the video narrations of the dataset</h3>
+    <p>We read the narrations to find where the movements happen. We counted movement keywords (jump, kick, dance, run, …) in the 844 narrated sequences and chose 19 sequences with whole-body motion, from five scenarios: Workout, Dance, Game night, Do as I command and Fresh air.</p>
+
+    <h3>Select the classes to study</h3>
+    <p>The narrations tell us where to look, but not whether the body is actually visible. For that, without the video, we draw the ground-truth skeleton as the observer camera sees it (a <strong>preview</strong>) and measure, every second, whether the whole body is inside the image, how many joints are hidden by the body itself, and how fast the limbs move.</p>
+    <p>Figure 2 is a preview of one dance sequence: green joints are visible from the camera, red ones are hidden behind the body, and the narration of that moment appears below. Figure 3 summarises the whole 14-minute sequence second by second: the whole body is in the image 93 % of the time (top), between 5 % and 30 % of the joints are self-occluded most of the time (middle), and the limbs move at 0.3–0.5 m/s except in a few pauses (bottom). Those pauses and the gaps in the top row are the seconds a clip must avoid.</p>
+    <figure class="article-fig portrait">
+      <video src="../assets/video/projects/stride/preview_bn89qe.mp4" controls muted loop playsinline preload="metadata"></video>
+      <figcaption><strong>Figure 2.</strong> Preview of sequence <code>bn89qe</code> (dance), no video needed: green joints visible, red joints hidden by the body itself; narration as subtitle. 15 s.</figcaption>
+    </figure>
+    <figure class="article-fig wide">
+      <img src="../assets/img/projects/stride/timeline_bn89qe.webp" alt="Timeline of a sequence: whole body in frame, percentage of self-occluded joints, limb speed" loading="lazy">
+      <figcaption><strong>Figure 3.</strong> Timeline of the same sequence: whole body in the image (top), % of joints self-occluded (middle), mean limb speed in m/s (bottom).</figcaption>
+    </figure>
+    <p>With these previews we take three decisions about imperfect data: we keep occlusion, because it is the challenge we want to study; we discard the seconds where the body is not fully inside the image, because there is no complete body to compare against; and we note that the occlusion we measure is only self-occlusion, since the preview has no image, so furniture and other people are not counted.</p>
+
+    <div class="decision">
+      <h4>D3 · Short clips, one movement each <span class="tag">2026-10-19</span></h4>
+      <ul>
+        <li><strong>Decision.</strong> Evaluate on short clips, each one a single movement, cut from the previews.</li>
+        <li><strong>Why.</strong> Evaluating per movement type tells us whether an effect generalises across motions (dancing is not kicking a ball), and short clips can be processed one by one.</li>
+        <li><strong>First clip.</strong> <code>dance_salsa_01</code> (S6-Dance, 60 s) was chosen by hand from the previews to run the baseline (E1–E3).</li>
+        <li><strong>AI.</strong> Wrote the preview renderer; the team reviewed the previews and picked the first clip.</li>
+      </ul>
+    </div>
+    <div class="decision">
+      <h4>D4 · Labels that describe the movement of the body <span class="tag">2026-10-20</span></h4>
+      <ul>
+        <li><strong>Why.</strong> The same word in a narration covers very different movements: "hit" can be a badminton stroke, a table-tennis stroke or a punch; "jump" can be a real jump or mimicking a jump rope; "dance" can be a square step, a cross step or a turn.</li>
+        <li><strong>Decision.</strong> Read every narration in usable time (2 465) and label it by the movement it describes. For dance, badminton, table tennis and soccer (1 468 narrations) one level further: the footwork of the dance (<code>dance_square_step</code>, <code>dance_cross_step</code>), the stroke (<code>badminton_overhead_stroke</code>, <code>badminton_serve</code>, <code>table_tennis_reach_stroke</code>) and how the ball is kicked (<code>soccer_receive_and_pass</code>, <code>soccer_run_and_kick</code>). Result: 79 actions in 11 macro categories.</li>
+        <li><strong>AI.</strong> Read and labelled the narrations; the team set the level of detail and approved the macro categories.</li>
+      </ul>
+    </div>
+    <div class="decision">
+      <h4>D5 · Clip library: every usable window of the 19 sequences <span class="tag">2026-10-20</span></h4>
+      <ul>
+        <li><strong>Decision.</strong> A clip is a run of consecutive seconds with the same label (D4), the whole body in the image in every second, mean limb speed ≥ 0.3 m/s and 3–30 s (longer runs split evenly); <code>idle</code> and <code>sitting</code> excluded.</li>
+        <li><strong>Why.</strong> As much data as the 19 sequences give, for every movement type, each clip exactly one action. Not used: 44 min too slow, 17 min in runs shorter than 3 s.</li>
+        <li><strong>AI.</strong> Built the clips from the labels; the team set the criteria.</li>
+      </ul>
+    </div>
+    <p>Table 1 shows the result: 992 clips (126.5 min) of 79 actions. Soccer and dance dominate in minutes; jump and stretch are rare.</p>
+    <div class="table-scroll">
+      <table>
+        <caption>Table 1. Clip library by macro category (19 sequences).</caption>
+        <thead><tr><th>Macro category</th><th>Clips</th><th>Minutes</th><th>Macro category</th><th>Clips</th><th>Minutes</th></tr></thead>
+        <tbody>
+          <tr><td>soccer</td><td>317</td><td>30.4</td><td>run</td><td>41</td><td>7.4</td></tr>
+          <tr><td>dance</td><td>188</td><td>32.5</td><td>table tennis</td><td>41</td><td>3.8</td></tr>
+          <tr><td>badminton</td><td>152</td><td>11.2</td><td>ball games (other)</td><td>31</td><td>6.1</td></tr>
+          <tr><td>walk</td><td>105</td><td>10.9</td><td>daily actions</td><td>31</td><td>2.4</td></tr>
+          <tr><td>exercise</td><td>57</td><td>15.7</td><td>stretch</td><td>17</td><td>2.3</td></tr>
+          <tr><td></td><td></td><td></td><td>jump</td><td>12</td><td>3.6</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Not every use of the data needs the images: to learn how a body moves, the motion capture alone is enough; only to see where SAM 3D Body fails do we need the video, and the video is what does not fit on our disk. So we keep two kinds of data:</p>
+    <div class="decision">
+      <h4>D6 · Two kinds of data: motion without video, images only where SAM 3D Body runs <span class="tag">2026-10-19</span></h4>
+      <ul>
+        <li><strong>Decision.</strong> Motion capture of the whole 19 sequences without video (308 min, ~45 MB per sequence), to pre-train with simulated occlusion; and clips with images only where SAM 3D Body has to run. Each video is downloaded, its clips are cut, and the video is deleted, one sequence at a time.</li>
+        <li><strong>Why.</strong> Images weigh ~0.3 GB per minute of clip at 30 fps; motion capture is light and covers every minute.</li>
+        <li><strong>AI.</strong> Wrote the download and extraction scripts, with a free-disk check.</li>
+      </ul>
+    </div>
+
+    <!-- ===================================================================================== -->
+    <h2 id="s3">3) Inference with SAM 3D Body</h2>
+
+    <h3>Study the model</h3>
+    <p>SAM 3D Body estimates the 3D body of one person from one image: an encoder (DINOv3<a class="cite" href="#ref-5">[5]</a>) reads the crop around the person, and a promptable decoder predicts the MHR parameters. It needs a box around the person and, optionally, the camera intrinsics; it also accepts 2D key points as prompts, like the SAM family.</p>
+    <div class="decision">
+      <h4>D7 · Base model: SAM 3D Body, DINOv3-H+ checkpoint, frozen <span class="tag">2026-10-17</span></h4>
+      <ul>
+        <li><strong>Decision.</strong> Use the released DINOv3-H+ checkpoint (840 M encoder) and never fine-tune it.</li>
+        <li><strong>Why.</strong> It is the better of the two released checkpoints, and at ~1 B parameters it cannot be trained on our 12 GB GPU. Frozen inference also gives a clean baseline.</li>
+        <li><strong>Alternatives.</strong> ViT-H checkpoint (631 M): slightly worse in the paper.</li>
+        <li><strong>AI.</strong> Environment setup and checkpoint download.</li>
+      </ul>
+    </div>
+    <div class="decision">
+      <h4>D8 · Box from the ground truth for now <span class="tag">2026-10-17</span></h4>
+      <ul>
+        <li><strong>Decision.</strong> The box around the person comes from the projected ground-truth joints, not from a detector.</li>
+        <li><strong>Why.</strong> The repository's detector (ViTDet-H) and SAM 3D Body do not fit together in 12 GB; first we measure the model without detection errors.</li>
+        <li><strong>Consequence.</strong> The reported errors are a lower bound; a real detector is ablation A7.</li>
+      </ul>
+    </div>
+
+    <h3>Test the model following the repository</h3>
+    <p>We first ran the model as the repository shows (one image), and then on our first clip, <code>dance_salsa_01</code>, in its two modes: only the body, or the body plus the hand decoders (E1, E2). Table 2 compares them.</p>
+    <div class="decision">
+      <h4>D9 · <code>body</code> inference mode as the baseline <span class="tag">2026-10-17</span></h4>
+      <ul>
+        <li><strong>Decision.</strong> Use the body decoder only (<code>body</code> mode), not the body + hand decoders (<code>full</code>).</li>
+        <li><strong>Why.</strong> On <code>dance_salsa_01</code> the hand decoders do not improve the body and triple the time per frame (Table 2).</li>
+      </ul>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <caption>Table 2. Body vs body + hand decoders on <code>dance_salsa_01</code> (1 801 frames).</caption>
+        <thead><tr><th>Metric</th><th><code>body</code></th><th><code>full</code></th></tr></thead>
+        <tbody>
+          <tr><td>MPJPE after pelvis alignment</td><td>84.0 mm</td><td>84.1 mm</td></tr>
+          <tr><td>PA-MPJPE</td><td>57.0 mm</td><td>57.1 mm</td></tr>
+          <tr><td>Acceleration (ground truth 3.7)</td><td>16.4 mm/frame²</td><td>16.8 mm/frame²</td></tr>
+          <tr><td>Left / right wrist</td><td>211.7 / 126.8 mm</td><td>211.7 / 128.3 mm</td></tr>
+          <tr><td>Time per frame (RTX 4070)</td><td>144 ms</td><td>450 ms</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="decision">
+      <h4>D10 · Compute: GPU jobs on Kaggle, data processing local <span class="tag">2026-10-19 · dropped 2026-10-21 (D17)</span></h4>
+      <ul>
+        <li><strong>Decision (first).</strong> Heavy GPU runs on Kaggle (2× T4) through its API; downloads and preprocessing local.</li>
+        <li><strong>Check.</strong> Kaggle reproduces the local metrics exactly on <code>dance_salsa_01</code>, but at 1.6 s per frame vs 0.14 s locally (bfloat16 is not native on the T4).</li>
+        <li><strong>Dropped.</strong> All GPU work runs on the local RTX 4070 (D17).</li>
+      </ul>
+    </div>
+
+    <h3>Run the teardown</h3>
+    <p>The teardown (Phase A, below) shows where the model spends its parameters and time, and that the prediction of an occluded joint is built from the context of the body, not from what is visible at its position. The baselines (E1–E3) show that SAM 3D Body jitters, with acceleration 4.4× the ground truth's; a simple filter removes that jitter, but not the error of the occluded wrist, which stays wrong for as long as it is occluded. This tells us where to intervene:</p>
+    <div class="decision">
+      <h4>D11 · Where to intervene: inside the model, on the decoder pose tokens <span class="tag">2026-10-19 · replaced 2026-10-21 (D17)</span></h4>
+      <ul>
+        <li><strong>Decision (first).</strong> Temporal attention over the decoder's pose tokens across T frames, before the MHR head, with the rest of the model frozen.</li>
+        <li><strong>Why.</strong> A filter after the model is post-processing; the course asks for a change in the model's core.</li>
+        <li><strong>Replaced.</strong> The intervention became P3b, the correction of the decoder's prompts (D14, D17).</li>
+      </ul>
+    </div>
+
+    <!-- ===================================================================================== -->
+    <h2 id="s4">First study on more clips: <code>catalog_v_old</code></h2>
+    <p>E1–E3 are one clip. Before extracting the library (D5), we wanted to fix the whole pipeline (inference, evaluation, failure atlas, correction) on clips we already had with images.</p>
+    <div class="decision">
+      <h4>D12 · First study on the 67 local clips of <code>catalog_v_old</code> <span class="tag">2026-10-20</span></h4>
+      <ul>
+        <li><strong>Decision.</strong> Run the pipeline on the 67 clips with images of <code>catalog_v_old</code>, the first clip catalogue (117 clips chosen before the library, with broader labels such as <code>badminton</code> or <code>dance</code>): 20 165 frames, 13 categories, 10 sequences of 10 different people. Every script reads the clip folder from one environment variable, so the same code runs on this catalogue or on the library.</li>
+        <li><strong>Why.</strong> The library clips are not extracted yet, and the pipeline can be fixed without them. Check: on <code>dance_salsa_01</code> the baseline gives the same numbers as E1 (84.0 / 57.0 mm).</li>
+        <li><strong>Limitation.</strong> The labels are the broad ones, not the 79 actions of D4.</li>
+        <li><strong>AI.</strong> Made the scripts read the clip folder from a variable and ran inference and evaluation.</li>
+      </ul>
+    </div>
+    <p>Table 3 is the failure atlas of the baseline on these clips: 19 946 frames evaluated (whole body in the image), means weighted by frames. MPJPE ranges from 70.7 mm (walk backward, pool noodle) to 103.4 mm (side hop), and in almost every category the worst joints are the wrists and the toes (<code>l_wrist</code>, <code>r_wrist</code>, <code>r_ball</code>, <code>l_ball</code>). Badminton and table tennis also jitter the most (acceleration error 30.4 and 28.9 mm/frame²): fast arm strokes.</p>
+    <div class="table-scroll">
+      <table>
+        <caption>Table 3. Failure atlas of the baseline, 67 clips, sorted by MPJPE (mm; acceleration error in mm/frame²).</caption>
+        <thead><tr><th>Category</th><th>Clips</th><th>Frames</th><th>MPJPE</th><th>PA-MPJPE</th><th>Accel. error</th><th>Worst joints</th></tr></thead>
+        <tbody>
+          <tr><td>side hop</td><td>1</td><td>1 410</td><td>103.4</td><td>59.8</td><td>17.3</td><td>l_wrist, r_wrist, r_ball</td></tr>
+          <tr><td>badminton</td><td>12</td><td>2 251</td><td>99.0</td><td>63.6</td><td>30.4</td><td>l_wrist, r_wrist, r_ball</td></tr>
+          <tr><td>table tennis</td><td>5</td><td>660</td><td>98.3</td><td>76.2</td><td>28.9</td><td>r_ball, l_ball, r_foot</td></tr>
+          <tr><td>run</td><td>7</td><td>2 025</td><td>96.5</td><td>70.3</td><td>19.7</td><td>r_ball, r_foot, l_ball</td></tr>
+          <tr><td>table tennis pick up ball</td><td>1</td><td>120</td><td>91.7</td><td>65.0</td><td>22.2</td><td>r_foot, r_ball, c_neck</td></tr>
+          <tr><td>dance</td><td>12</td><td>3 210</td><td>86.9</td><td>58.4</td><td>13.5</td><td>r_wrist, c_head, r_uparm</td></tr>
+          <tr><td>soccer kick</td><td>13</td><td>1 436</td><td>85.8</td><td>57.6</td><td>22.0</td><td>l_ball, r_ball, l_foot</td></tr>
+          <tr><td>dance salsa</td><td>7</td><td>3 331</td><td>83.4</td><td>56.1</td><td>14.4</td><td>l_wrist, r_wrist, c_head</td></tr>
+          <tr><td>warmup forward lunges</td><td>1</td><td>1 363</td><td>79.1</td><td>51.2</td><td>12.7</td><td>r_wrist, l_wrist, r_ball</td></tr>
+          <tr><td>jog</td><td>4</td><td>1 259</td><td>76.1</td><td>56.2</td><td>18.9</td><td>r_ball, r_foot, r_wrist</td></tr>
+          <tr><td>forward and side bends</td><td>1</td><td>1 560</td><td>75.0</td><td>47.6</td><td>10.2</td><td>r_ball, l_wrist, c_head</td></tr>
+          <tr><td>pool noodle hit ball</td><td>2</td><td>691</td><td>70.7</td><td>54.5</td><td>12.4</td><td>r_ball, r_wrist, r_lowarm</td></tr>
+          <tr><td>walk backward</td><td>1</td><td>630</td><td>70.7</td><td>56.0</td><td>16.2</td><td>r_ball, r_foot, l_ball</td></tr>
+          <tr><td><strong>all</strong></td><td><strong>67</strong></td><td><strong>19 946</strong></td><td><strong>86.9</strong></td><td><strong>58.8</strong></td><td><strong>17.7</strong></td><td>l_wrist, r_ball, r_wrist</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>To study occlusion per joint and per frame on these clips, we need to know which joints are hidden in each frame:</p>
+    <div class="decision">
+      <h4>D13 · Per-joint self-occlusion from the participant's real body mesh <span class="tag">2026-10-20</span></h4>
+      <ul>
+        <li><strong>Decision.</strong> For every frame, a joint is self-occluded if the participant's body surface is more than 12 cm in front of it as seen from the camera (z-buffer of the mesh on 8 px cells of the 1024 image), the same rule as the previews. The surface is the participant's real MHR mesh, nearest body frame.</li>
+        <li><strong>Why.</strong> Without the body files the mesh would need a mean body shape, and joints ~10 cm under the skin (pelvis, neck, hips) would be marked hidden too often. With the real mesh, <code>dance_salsa_01</code> gives 16.1 % of hidden joints, as its preview (per-frame correlation 0.88). The other 66 clips were not checked against a preview or by eye.</li>
+        <li><strong>Limitation.</strong> Only self-occlusion: furniture, objects and other people are not counted, so it is a lower bound. Measuring them (e.g. with a person mask) was discarded: it would not change any decision of the plan.</li>
+        <li><strong>AI.</strong> Wrote the script and downloaded the body files of the 10 sequences (deleted after use).</li>
+      </ul>
+    </div>
+    <p>Figure 4 shows what D13 measures over the 67 clips. Left: the hips are self-occluded in 31 % of the frames and the shoulders in 23–25 %, while knees and ankles are hidden in less than 10 %. The torso or an arm usually stands between the camera and the hips. Right: the number of the 12 key joints hidden in a frame is usually 1 to 3 (mean 2.17); 16 % of the frames have none, and no frame has more than 8.</p>
+    <figure class="article-fig wide">
+      <img src="../assets/img/projects/stride-book/d13_occlusion.webp" alt="Share of frames where each key joint is self-occluded, and distribution of self-occluded key joints per frame" loading="lazy">
+      <figcaption><strong>Figure 4.</strong> Self-occlusion of the 12 key joints over the 67 clips (20 165 frames). Left: per joint. Right: per frame.</figcaption>
+    </figure>
+    <p>With the oracle E4 (Experiments) we measured how much better 2D key points can help SAM 3D Body through its own promptable decoder: the 12 true key points lower MPJPE by 27 %, and most of the gain comes from the visible joints. At test time there are no true key points, so the question becomes how much of that gain a network can recover:</p>
+    <div class="decision">
+      <h4>D14 · P3b: a small network that corrects SAM 3D Body's 12 key points, used as its prompts <span class="tag">2026-10-20</span></h4>
+      <ul>
+        <li><strong>Decision.</strong> SAM 3D Body stays frozen. For frame \(t\), a small network reads SAM 3D Body's encoder latent and its predicted 12 key points (2D and 3D) for the frames \(t-1, t, t+1\), and outputs a 2D correction of each key point and its confidence. The corrected points go back into SAM 3D Body's decoder as prompts.
+          <ul>
+            <li><em>Network:</em> a Transformer decoder in the style of DETR<a class="cite" href="#ref-8">[8]</a>: 12 learned joint queries attend to the \(3\times32\times32\) latent tokens (after a 1×1 projection 1280 → 256) and to each other; 2 layers, 2.5 M parameters. Its output layer starts at zero, so at first it returns SAM 3D Body's own points.</li>
+            <li><em>Loss:</em> first in 2D, a Laplace likelihood \(\lVert\hat\delta-\delta\rVert_1/b + 2\log b\), so the confidence \(b\) comes out of the same loss<a class="cite" href="#ref-9">[9]</a>; then fine-tuned in 3D through the frozen decoder (final body vs ground truth, 18 joints, pelvis-aligned).</li>
+            <li><em>Prompts:</em> always the 12 key joints; "only those above a confidence threshold" is kept as an alternative.</li>
+          </ul></li>
+        <li><strong>Why.</strong> The prompt encoder only accepts 2D points; E4 shows the 12 key ones lower the error a lot. We cannot know at test time which joints are occluded, and E4 (a) shows that prompting only the occluded ones recovers little and doubles the jitter. The latent is what SAM 3D Body already understood of the image, so the network can be small. Correction 0 is almost the baseline: SAM 3D Body with its own 12 points as prompts changes MPJPE by +1.0 mm on <code>dance_salsa_01</code> (84.0 → 85.0).</li>
+        <li><strong>Alternatives (kept as ablations).</strong> The image crop instead of the latent; without the predicted points; only frame \(t\); a causal window; absolute positions instead of a correction; more predicted key points than the 12 (face, fingers and toes judged not relevant); only 2D or only 3D loss.</li>
+        <li><strong>AI.</strong> Proposed the options; the team chose each part.</li>
+      </ul>
+    </div>
+    <p>Figures 5 and 6 follow one frame of <code>dance_salsa_01</code> (frame 850) through P3b. In Figure 5, panel 1 is the frame with the person box; panel 2 is what the encoder actually sees: SAM 3D Body enlarges the box internally, so the 512×512 crop covers 832 px of the 1024 frame and the person is a small part of it (the black band is padding beyond the image); panel 3 is the latent the network reads, reduced to 3 colours: after removing what each grid cell has in common over 40 frames of the clip, what changes lies on the person. In Figure 6, panel 4 is what the network must learn: an arrow from each of SAM 3D Body's points (red) to the true one (green); the circled point is self-occluded, and the longest arrow is on an arm. Panel 5 is the 3D result for this frame: 106 mm for SAM 3D Body alone and 76 mm when the true points are given as prompts; P3b should land in between.</p>
+    <figure class="article-fig wide">
+      <img src="../assets/img/projects/stride-book/process_1_3.webp" alt="Frame with box, encoder crop and latent" loading="lazy">
+      <figcaption><strong>Figure 5.</strong> Panels 1–3: frame and box, encoder crop, latent (3 principal components as RGB, per-position mean removed).</figcaption>
+    </figure>
+    <figure class="article-fig">
+      <img src="../assets/img/projects/stride-book/process_4_5.webp" alt="Key points to correct and 3D pose" loading="lazy">
+      <figcaption><strong>Figure 6.</strong> Panels 4–5: the correction the network must learn, and the 3D pose of SAM 3D Body, with the true prompts, and the ground truth.</figcaption>
+    </figure>
+    <div class="decision">
+      <h4>D15 · Split by person <span class="tag">2026-10-20</span></h4>
+      <ul>
+        <li><strong>Decision.</strong> Train, validate and test on different people (Table 4).</li>
+        <li><strong>Why.</strong> Clips of the same person look alike; splitting by clip would test on people the network has seen. Several categories are done by only one person (dance salsa: kevin; side hop, lunges and bends: erica; table tennis: ashley), so those people stay in training, and every validation and test category is also done by a training person.</li>
+        <li><strong>Next.</strong> Leave-one-person-out cross-validation for the final number.</li>
+      </ul>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <caption>Table 4. Split by person (sequence id in brackets).</caption>
+        <thead><tr><th>Split</th><th>People</th><th>Frames</th><th>Categories</th></tr></thead>
+        <tbody>
+          <tr><td>train</td><td>erica (2cr1ms), kevin (bn89qe), thomas (bsfnuw), michael (16jyco), amy (gw4r7y), ashley (25pwky), glenn (bg6k8j)</td><td>16 325 (81 %)</td><td>all 13</td></tr>
+          <tr><td>validation</td><td>steven (mbwlha)</td><td>900 (4 %)</td><td>badminton</td></tr>
+          <tr><td>test</td><td>frank (d1pep2), maria (gal7m1)</td><td>2 940 (15 %)</td><td>jog, run, dance</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="decision">
+      <h4>D16 · Store the full encoder latent of the 67 clips <span class="tag">2026-10-21</span></h4>
+      <ul>
+        <li><strong>Decision.</strong> Save SAM 3D Body's encoder latent of every frame once (32×32×1280, float16, ~2.6 MB per frame): 50 GB. Each clip checks that the pose of this pass equals the saved baseline (max difference 0.003 mm).</li>
+        <li><strong>Why.</strong> Training reads the latent at every pass; running the encoder each time would take ~45 min per pass.</li>
+        <li><strong>Open issue.</strong> For the whole library the latent would be ~600 GB at 30 fps. Before that, we will measure how much is lost by compressing it (e.g. 1280 → 256 channels with PCA) by running the decoder on the reconstructed latent.</li>
+      </ul>
+    </div>
+    <div class="decision">
+      <h4>D17 · The intervention is P3b only; everything runs locally <span class="tag">2026-10-21</span></h4>
+      <ul>
+        <li><strong>Decision.</strong> The intervention is P3b (D14), trained first in 2D (E5) and then in 3D through the frozen decoder (E6). The temporal attention of D11 is not done, and the Kaggle route of D10 is dropped.</li>
+        <li><strong>Why.</strong> E4 shows that the decoder's prompts are a strong lever (−27 % MPJPE with the true points), and P3b acts inside the model through that interface with SAM 3D Body frozen. The local GPU was enough for every run so far.</li>
+        <li><strong>Consequence.</strong> Ablations A1–A3 and A5 were written for D11; A8–A13 replace them.</li>
+      </ul>
+    </div>
+
+    <!-- ===================================================================================== -->
+    <h2 id="phaseA">Course tasks · Phase A: teardown</h2>
+    <p>Input: <code>dance_salsa_01</code>, frame 450, 512×512 crop. Table 5 shows where the model spends its parameters and time. The encoder holds almost all the parameters and 98 % of the computation, but the body decoder is slower than the encoder in wall time, because it calls the MHR head 6 times in a row.</p>
+    <div class="table-scroll">
+      <table>
+        <caption>Table 5. Teardown of SAM 3D Body (RTX 4070).</caption>
+        <thead><tr><th>Part</th><th>Value</th></tr></thead>
+        <tbody>
+          <tr><td>Parameters</td><td>1 285 M total, <strong>953 M learned</strong> (the rest is the fixed MHR body model, embedded twice)</td></tr>
+          <tr><td>Encoder (DINOv3 ViT-H+/16, 32 blocks, 32×32 tokens × 1280)</td><td>840.6 M parameters, <strong>98 % of FLOPs</strong> (1 902 of 1 938 GFLOPs per person)</td></tr>
+          <tr><td>Body decoder</td><td>39.4 M parameters, 1.7 % of FLOPs, but <strong>78 ms vs 50 ms</strong> for the encoder</td></tr>
+          <tr><td>Time per frame / memory</td><td>body 144 ms, full 450 ms; peak memory 3.5 GB</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Figure 7 is the effective receptive field of the encoder token at the patch of five joints: the area of the image whose pixels hold 50 % of the gradient of that token. For the visible right wrist it is a tight patch (2 % of the image) around the wrist. For the occluded left wrist it is wider (8.6 %) and its mass sits on the head and torso, not on the wrist: when a joint is not visible, the encoder builds its token from the context of the body, so its prediction is inferred, not observed. This is the first clue of the sustained wrist error found in E1 and E3.</p>
+    <figure class="article-fig wide">
+      <img src="../assets/img/projects/stride/erf.webp" alt="Effective receptive field of the encoder at five joints" loading="lazy">
+      <figcaption><strong>Figure 7.</strong> Effective receptive field of the encoder token at <code>l_wrist</code> (occluded), <code>r_wrist</code>, <code>c_head</code>, <code>root</code> and <code>l_foot</code> (white circle: the joint).</figcaption>
+    </figure>
+    <p>Figure 8 shows the first 3 principal components of the encoder's patch features of the same frame as colours. They vary smoothly across the image, mostly with the position in the grid (top to bottom), and the person is not separated from the background in them. This is why, for Figure 5, we removed the part each grid cell has in common over many frames before looking at the latent: what is left does follow the person.</p>
+    <figure class="article-fig">
+      <img src="../assets/img/projects/stride/pca.webp" alt="Crop and PCA of the encoder features" loading="lazy">
+      <figcaption><strong>Figure 8.</strong> Crop (left) and the first 3 principal components of its 32×32 encoder features as RGB (right).</figcaption>
+    </figure>
+
+    <!-- ===================================================================================== -->
+    <h2 id="experiments">Course tasks · Experiments</h2>
+    <p>Common setup: frozen SAM 3D Body, box from the ground truth, known intrinsics, 18 body joints of the MHR skeleton, frames with the whole body in view. Metrics: MPJPE after pelvis alignment, PA-MPJPE (after aligning rotation, scale and position), acceleration error (mm/frame²).</p>
+
+    <h3>E1 · Baseline on <code>dance_salsa_01</code>, body mode <span class="tag">2026-10-17</span></h3>
+    <p>MPJPE 84.0 mm, PA-MPJPE 57.0 mm, and <strong>acceleration 16.4 vs 3.7 mm/frame² for the ground truth: 4.4× jitter</strong>. Worst joints: left wrist 212 mm, right wrist 127 mm, head 119 mm. The left arm is occluded at times.</p>
+    <p>Figure 9 shows the 10 s of the clip where the left wrist is worst (268 mm on average; the wrist is self-occluded 47 % of that time). The red skeleton (SAM 3D Body) stays on the person and close to the green one (ground truth) for the legs and torso, while the arms differ more; over these 10 s the left wrist is on average 268 mm from its true position. Figure 10 shows the whole clip: the error (top) varies between ~60 and ~120 mm without settling, and the acceleration of SAM 3D Body (red, bottom) stays well above the ground truth's (green) all the time, with one spike near the end.</p>
+    <figure class="article-fig">
+      <video src="../assets/video/projects/stride/sam3db_dance_salsa_01.mp4" controls muted loop playsinline preload="metadata"></video>
+      <figcaption><strong>Figure 9.</strong> Green: ground truth (XSens). Red: SAM 3D Body. 10 s of <code>dance_salsa_01</code> with the largest left-wrist error.</figcaption>
+    </figure>
+    <figure class="article-fig wide">
+      <img src="../assets/img/projects/stride/error_vs_time_dance_salsa_01.webp" alt="MPJPE, PA-MPJPE and acceleration over the clip" loading="lazy">
+      <figcaption><strong>Figure 10.</strong> <code>dance_salsa_01</code> over time. Top: MPJPE and PA-MPJPE. Bottom: limb acceleration of the ground truth and of SAM 3D Body.</figcaption>
+    </figure>
+
+    <h3>E2 · Full mode (hand decoders) <span class="tag">2026-10-17</span></h3>
+    <ul>
+      <li><strong>Hypothesis (written before):</strong> the hand decoders lower the wrist error.</li>
+      <li><strong>Result:</strong> no change (PA-MPJPE 57.1 mm, left wrist 211.7 mm, Table 2). <strong>Rejected.</strong> The hand decoder refines the fingers and the rotation of the hand; the wrist position comes from the arm chain, and the hands are only a few pixels wide here.</li>
+    </ul>
+
+    <h3>E3 · Classical temporal filters on <code>dance_salsa_01</code> <span class="tag">2026-10-19</span></h3>
+    <p>Table 6 applies four classical filters to the output of SAM 3D Body. Savitzky-Golay<a class="cite" href="#ref-6">[6]</a> removes almost all the jitter (acceleration error 12.9 → 2.3) but leaves the left wrist at 211 mm; One-Euro<a class="cite" href="#ref-7">[7]</a> smooths even more but lags, so MPJPE gets worse. Figure 11 shows the same per frame: the smoothed curves come down to the ground truth's level, the raw and median ones stay above.</p>
+    <div class="table-scroll">
+      <table>
+        <caption>Table 6. E3, classical filters (mm, mm/frame²).</caption>
+        <thead><tr><th>Method</th><th>MPJPE</th><th>PA-MPJPE</th><th>Accel. error</th><th>Accel.</th><th>Left wrist</th></tr></thead>
+        <tbody>
+          <tr><td>frame by frame (raw)</td><td>84.0</td><td>57.0</td><td>12.9</td><td>16.4</td><td>211.7</td></tr>
+          <tr><td>median, k = 5</td><td>83.8</td><td>56.8</td><td>9.0</td><td>12.4</td><td>210.8</td></tr>
+          <tr><td>Savitzky-Golay, w = 9, p = 2</td><td>83.7</td><td>56.7</td><td><strong>2.3</strong></td><td>4.5</td><td>210.9</td></tr>
+          <tr><td>One-Euro (mc = 1.0, β = 0.5)</td><td>88.2</td><td>60.7</td><td>2.1</td><td>3.6</td><td>220.7</td></tr>
+          <tr><td>spike detection (&gt; 10 cm) + interpolation</td><td>84.0</td><td>57.0</td><td>12.6</td><td>16.1</td><td>211.4</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <figure class="article-fig wide">
+      <img src="../assets/img/projects/stride/accel_filters.webp" alt="Limb acceleration of each filter against the ground truth" loading="lazy">
+      <figcaption><strong>Figure 11.</strong> Limb acceleration over the clip for the ground truth and each filter.</figcaption>
+    </figure>
+    <ul>
+      <li><strong>Hypothesis (team):</strong> to fill in (these filters were run as a reference before the hypothesis protocol was set up; from E4 on, hypotheses come first).</li>
+      <li><strong>Reading.</strong> Only 0.3 % of the joint positions are spikes &gt; 10 cm: the wrist error is a <strong>sustained offset during occlusion</strong>, not noise.</li>
+      <li><strong>Consequence.</strong> Beating a filter on jitter is not enough; the learned module must fix the sustained errors of occluded joints.</li>
+    </ul>
+
+    <h3>E4 · Ground-truth 2D key points as prompts (oracle) on <code>catalog_v_old</code> <span class="tag">2026-10-20</span></h3>
+    <ul>
+      <li><strong>Setup.</strong> The 67 clips (20 165 frames, 13 categories), body mode, same box and intrinsics as E1. The body decoder is run a second time with 2D key-point prompts taken from the ground truth: (a) only the key joints self-occluded in the frame (D13), or (b) always the 12 key joints.</li>
+      <li><strong>Hypothesis (team, written before running):</strong> giving SAM 3D Body the ground-truth 2D key points as prompts will lower the error, because they are the true positions; this is an upper bound. The interesting question is how much of that gain a small predictor, trained with the ground truth on our frames, can recover.</li>
+    </ul>
+    <p>Table 7 gives the totals. (b) lowers all three metrics by about a quarter. (a), with 2.17 prompts per frame on average, lowers MPJPE by only 6.5 % and <em>doubles</em> the acceleration error.</p>
+    <div class="table-scroll">
+      <table>
+        <caption>Table 7. E4 on the 67 clips (19 946 frames).</caption>
+        <thead><tr><th>SAM 3D Body with…</th><th>MPJPE</th><th>PA-MPJPE</th><th>Accel. error</th></tr></thead>
+        <tbody>
+          <tr><td>nothing (baseline)</td><td>86.9 mm</td><td>58.8 mm</td><td>17.7 mm/f²</td></tr>
+          <tr><td>(a) only the occluded key joints</td><td>81.2 mm (−6.5 %)</td><td>56.7 mm (−3.6 %)</td><td>35.1 mm/f² (×2)</td></tr>
+          <tr><td>(b) the 12 key joints</td><td><strong>63.8 mm (−27 %)</strong></td><td><strong>43.6 mm (−26 %)</strong></td><td><strong>13.4 mm/f² (−24 %)</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Figure 12 breaks MPJPE down by category. (b) (blue) is the lowest in every category, by 11 to 33 mm; (a) (orange) sits close to the baseline (grey), and in walk backward it does not change it at all. Figure 13 breaks it down by joint: (b) also lowers joints that receive no prompt, such as the head (−30 mm) and the toes (−24 and −32 mm), because fixing the shoulders and hips moves the whole skeleton. The wrists and toes are still the worst joints with (b): the prompt fixes where a point is in the image, not its depth. In (a) the legs barely change.</p>
+    <figure class="article-fig">
+      <img src="../assets/img/projects/stride-book/e4_per_category.webp" alt="E4 MPJPE per category" loading="lazy">
+      <figcaption><strong>Figure 12.</strong> E4, MPJPE per category (frames in brackets), sorted by the baseline.</figcaption>
+    </figure>
+    <figure class="article-fig wide">
+      <img src="../assets/img/projects/stride-book/e4_per_joint.webp" alt="E4 MPJPE per joint" loading="lazy">
+      <figcaption><strong>Figure 13.</strong> E4, MPJPE per joint over the 67 clips (the pelvis is 0 by definition and is not shown).</figcaption>
+    </figure>
+    <ul>
+      <li><strong>Reading.</strong> (a) recovers only ~6 of the 23 mm of (b): most of the gain comes from the <strong>visible</strong> joints, so SAM 3D Body also misplaces what it sees. (a) doubles the jitter because the set of occluded joints changes between frames, so the prompts appear and disappear: in frames where the number of prompts changes, the acceleration error of (a) is 47.3 vs 29.8 mm/frame² in the others (baseline 24.8 in both; quick check over all frames, counting only the number of prompts).</li>
+      <li><strong>Held?</strong> Yes for (b). Beyond the hypothesis: the gain needs all 12 joints in every frame, not only the occluded ones.</li>
+      <li><strong>Limitation.</strong> Only self-occlusion is measured (D13).</li>
+    </ul>
+
+    <h3>E5 · P3b, 2D loss only <span class="tag">2026-10-21</span></h3>
+    <ul>
+      <li><strong>Setup.</strong> The D14 network trained with the 2D loss on the training people of D15 (49 clips, 16 107 evaluated frames), validated on steven (6 clips, 900 frames); the test people are not used. AdamW, lr 1e-4 with cosine decay, batch 32, 20 epochs (~47 s each); the model kept is the one with the lowest validation 2D error.</li>
+      <li><strong>Hypothesis (team):</strong> to fill in (this first run fixes the pipeline; the hypothesis was not written before it).</li>
+    </ul>
+    <p>Figure 14 is the training curve. On the validation person, the mean 2D error of the 12 points drops from 11.0 px (SAM 3D Body alone, dashed) to 4.6 px at epoch 6, and stays at ~4.7 px afterwards, while the training error keeps falling to 4.2 px: from epoch 6 on, the network is learning the training people rather than the task.</p>
+    <figure class="article-fig">
+      <img src="../assets/img/projects/stride-book/e5_training.webp" alt="E5 training curve" loading="lazy">
+      <figcaption><strong>Figure 14.</strong> E5, mean 2D error of the 12 points per epoch (training and validation).</figcaption>
+    </figure>
+    <p>Table 8 gives the 3D result of giving those corrected points to SAM 3D Body as prompts, on the same 900 validation frames, next to the baseline and the oracle.</p>
+    <div class="table-scroll">
+      <table>
+        <caption>Table 8. E5 in 3D (validation person, 900 frames).</caption>
+        <thead><tr><th>SAM 3D Body with…</th><th>2D error, 12 points</th><th>MPJPE</th><th>PA-MPJPE</th><th>Accel. error</th></tr></thead>
+        <tbody>
+          <tr><td>nothing (baseline)</td><td>11.0 px</td><td>86.6 mm</td><td>56.1 mm</td><td>26.6 mm/f²</td></tr>
+          <tr><td>the 12 points of P3b (2D loss)</td><td>4.6 px</td><td>80.9 mm (−5.7)</td><td>56.5 mm (+0.4)</td><td>29.0 mm/f² (+2.4)</td></tr>
+          <tr><td>the 12 true points (oracle, E4 b)</td><td>0 px</td><td>67.7 mm (−18.9)</td><td>47.0 mm</td><td>20.6 mm/f²</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <ul>
+      <li>P3b recovers ~30 % of the oracle's gain (5.7 of 18.9 mm) while removing ~60 % of the 2D error: the ~4.6 px left still matter a lot to SAM 3D Body.</li>
+      <li>PA-MPJPE does not improve (the oracle lowers it by 9 mm): the gain seems to come from the global placement of the body rather than the shape of the pose (not checked further).</li>
+      <li>The jitter rises a little: each frame is corrected on its own. Per joint: right wrist 145 → 133 mm; left wrist 156 → 159 and right toes 107 → 113 get slightly worse.</li>
+      <li><strong>Limitation.</strong> One validation person, one category, 900 frames.</li>
+      <li><strong>Consequence.</strong> Getting closer in 2D is not enough; this motivates the 3D fine-tuning, so that the network learns the points that lower the 3D error.</li>
+    </ul>
+
+    <h3>E6 · P3b, 3D fine-tuning through the frozen decoder <span class="tag">2026-10-21</span></h3>
+    <ul>
+      <li><strong>Setup.</strong> Starts from the E5 model. Each training step runs SAM 3D Body's frozen decoder with the network's points as prompts, from the stored first-pass state of the frame and the stored latent; loss = MPJPE of the 18 joints after pelvis alignment (mm) + 0.1 × the 2D loss of E5. Points outside the crop are not used, as in E5. All training frames every epoch, AdamW lr 5e-5 with cosine decay, batch 16, 10 epochs (~5 min each); the model kept is the one with the lowest validation MPJPE. Measured before: 15 ms per frame at batch 16 and 1.8 GB of GPU memory; the decoder run from the stored latent gives the saved poses (≤ 0.001 mm).</li>
+      <li><strong>Hypothesis (team, written before the result):</strong> we expect the 3D error to improve over E5, because now what is optimised is the 3D error itself.</li>
+    </ul>
+    <!-- E6_RESULT -->
+    <p class="stub">Result: running.</p>
+
+    <!-- ===================================================================================== -->
+    <h2 id="ablations">Planned ablations</h2>
+    <p>One change at a time; the hypothesis is written by the team before running. Table 9 lists them; A1–A3 and A5 were planned for the temporal module of D11 and are not run (D17).</p>
+    <div class="table-scroll">
+      <table>
+        <caption>Table 9. Planned ablations.</caption>
+        <thead><tr><th>Id</th><th>Change (one at a time)</th><th>Metric</th><th>Hypothesis (team)</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>A1</td><td>STRIDE window T = 1 vs 8 / 16 / 32</td><td>MPJPE, accel. err, per joint</td><td></td><td>not run (D17)</td></tr>
+          <tr><td>A2</td><td>Input: final MHR parameters vs decoder pose tokens</td><td>MPJPE on occluded joints</td><td></td><td>not run (D17)</td></tr>
+          <tr><td>A3</td><td>Causal vs bidirectional attention</td><td>MPJPE, accel. err</td><td></td><td>not run (D17)</td></tr>
+          <tr><td>A4</td><td>Train on some categories, test on unseen ones</td><td>MPJPE per category</td><td></td><td>planned</td></tr>
+          <tr><td>A5</td><td>STRIDE vs Savitzky-Golay vs SmoothNet</td><td>MPJPE, accel. err</td><td>SmoothNet behaves like Savitzky-Golay: it removes most of the jitter but leaves the sustained error of occluded joints unchanged, because it filters each coordinate independently.</td><td>not run (D17)</td></tr>
+          <tr><td>A6</td><td>Wide pinhole (D2) vs virtual camera centred on the person</td><td>MPJPE, PA-MPJPE</td><td></td><td>planned (Phase C)</td></tr>
+          <tr><td>A7</td><td>Box from the ground truth (D8) vs a real detector</td><td>MPJPE</td><td></td><td>planned (Phase C)</td></tr>
+          <tr><td>A8</td><td>P3b input: latent vs image crop</td><td>MPJPE (val)</td><td></td><td>planned</td></tr>
+          <tr><td>A9</td><td>P3b input: with vs without the predicted points</td><td>MPJPE (val)</td><td></td><td>planned</td></tr>
+          <tr><td>A10</td><td>P3b window: only \(t\) vs \(t\pm1\) vs + the predicted points of \(t\pm16\)</td><td>MPJPE, accel. err</td><td></td><td>planned</td></tr>
+          <tr><td>A11</td><td>P3b output: correction vs absolute position</td><td>MPJPE (val)</td><td></td><td>planned</td></tr>
+          <tr><td>A12</td><td>P3b prompts: always 12 vs only above a confidence threshold</td><td>MPJPE, accel. err</td><td></td><td>planned</td></tr>
+          <tr><td>A13</td><td>P3b loss: 2D only (E5) vs 3D + 2D (E6) vs + an acceleration term</td><td>MPJPE, accel. err</td><td>E6 hypothesis above</td><td>E5, E6 run</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="phaseC">Phase C: domain shift and failures (to do)</h2>
+    <ul>
+      <li>SAM 3D Body on 3DPW<a class="cite" href="#ref-10">[10]</a> (reproduce the paper's number) vs on NymeriaPlus: how much worse, and how much is explained by the lens (A6), the box (A7), distance and occlusion.</li>
+      <li>Failure catalogue: clips where P3b makes things worse, and why.</li>
+    </ul>
+
+    <p>Data: Nymeria and NymeriaPlus are released by Meta under CC BY-NC 4.0; the images and videos on this page are shown for non-commercial research, with faces blurred as in the dataset. SAM 3D Body is used under the SAM License.</p>
+
+    <h2 id="references">References</h2>
+    <ol class="ref-list">
+      <li id="ref-1">Yang, X., Kukreja, D., Pinkus, D., Sagar, A., Fan, T., Park, J., Shin, S., Cao, J., Liu, J., Ugrinovic, N., Feiszli, M., Malik, J., Dollar, P., &amp; Kitani, K. (2026). <em>SAM 3D Body: Robust Full-Body Human Mesh Recovery.</em> arXiv:2602.15989.</li>
+      <li id="ref-2">Ferguson, A., Osman, A. A. A., Bescos, B., et al. (2025). <em>MHR: Momentum Human Rig.</em> arXiv:2511.15586.</li>
+      <li id="ref-3">Ma, L., Ye, Y., Hong, F., et al. (2024). <em>Nymeria: A Massive Collection of Multimodal Egocentric Daily Motion in the Wild.</em> ECCV. arXiv:2406.09905.</li>
+      <li id="ref-4">DeTone, D., Bogo, F., Le, E.-T., Frost, D., Straub, J., Siddiqui, Y., Ye, Y., Engel, J., Newcombe, R., &amp; Ma, L. (2026). <em>NymeriaPlus: Enriching Nymeria Dataset with Additional Annotations and Data.</em> arXiv:2603.18496.</li>
+      <li id="ref-5">Siméoni, O., et al. (2025). <em>DINOv3.</em> Meta AI.</li>
+      <li id="ref-6">Savitzky, A., &amp; Golay, M. J. E. (1964). <em>Smoothing and Differentiation of Data by Simplified Least Squares Procedures.</em> Analytical Chemistry, 36(8).</li>
+      <li id="ref-7">Casiez, G., Roussel, N., &amp; Vogel, D. (2012). <em>1€ Filter: A Simple Speed-Based Low-Pass Filter for Noisy Input in Interactive Systems.</em> ACM CHI.</li>
+      <li id="ref-8">Carion, N., Massa, F., Synnaeve, G., Usunier, N., Kirillov, A., &amp; Zagoruyko, S. (2020). <em>End-to-End Object Detection with Transformers.</em> ECCV.</li>
+      <li id="ref-9">Kendall, A., &amp; Gal, Y. (2017). <em>What Uncertainties Do We Need in Bayesian Deep Learning for Computer Vision?</em> NeurIPS.</li>
+      <li id="ref-10">von Marcard, T., Henschel, R., Black, M. J., Rosenhahn, B., &amp; Pons-Moll, G. (2018). <em>Recovering Accurate 3D Human Pose in the Wild Using IMUs and a Moving Camera.</em> ECCV.</li>
+    </ol>
+  </article>
+
+  <a class="back-link" href="index.html">&larr; Back to Projects</a>
+</main>
+
+<footer class="footer">
+  <span>© Alexander F. Vasquez</span><span class="dot">·</span><span>Site under construction</span>
+</footer>
+
+<script src="../js/main.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    renderMathInElement(document.body, {
+      delimiters: [
+        { left: "\\[", right: "\\]", display: true },
+        { left: "\\(", right: "\\)", display: false }
+      ],
+      throwOnError: false
+    });
+  });
+</script>
+</body>
+</html>
