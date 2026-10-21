@@ -389,7 +389,7 @@
       <img src="../assets/img/projects/stride-book/e6_training.webp" alt="E6 training: validation MPJPE and 2D error per epoch" loading="lazy">
       <figcaption><strong>Figure 15.</strong> E6 per epoch. Left: MPJPE (train and validation) with the baseline, E5 and the oracle as references. Right: mean 2D error of the corrected points.</figcaption>
     </figure>
-    <p>Table 9 puts the whole Phase B on the same 900 validation frames. <strong>Held?</strong> Yes: the 3D error improves over E5 (80.9 → 75.9 mm), and P3b now recovers ~57 % of the oracle's gain (10.7 of 18.9 mm). Not yet measured for E6: PA-MPJPE, acceleration error and the test people.</p>
+    <p>Table 9 puts the whole Phase B on the same 900 validation frames. <strong>Held?</strong> Yes: the 3D error improves over E5 (80.9 → 75.9 mm), and P3b now recovers ~57 % of the oracle's gain (10.7 of 18.9 mm). The gain is concentrated where SAM 3D Body failed most: the left wrist goes from 156 to 134 mm, the right wrist from 145 to 111 mm and the head from 113 to 76 mm, while the right toes get worse (107 → 124 mm). Two things do not improve. PA-MPJPE stays at 56.5 mm, as in E5, while the oracle lowers it by 9 mm: the gain of P3b is in how the body is placed and oriented relative to the pelvis, not in the shape of the pose (not checked further). And the jitter rises more than in E5 (26.6 → 34.8 mm/frame²): each frame is still corrected on its own, now with points farther from the joints. The test people are not measured yet.</p>
     <div class="table-scroll">
       <table>
         <caption>Table 9. Phase B on the validation person (900 frames).</caption>
@@ -397,7 +397,7 @@
         <tbody>
           <tr><td>nothing (baseline)</td><td>11.0 px</td><td>86.6 mm</td><td>56.1 mm</td><td>26.6 mm/f²</td></tr>
           <tr><td>P3b, 2D loss (E5)</td><td>4.6 px</td><td>80.9 mm</td><td>56.5 mm</td><td>29.0 mm/f²</td></tr>
-          <tr><td>P3b, 3D fine-tuning (E6, epoch 2)</td><td>11.2 px</td><td><strong>75.9 mm</strong></td><td>not yet</td><td>not yet</td></tr>
+          <tr><td>P3b, 3D fine-tuning (E6, epoch 2)</td><td>11.2 px</td><td><strong>75.9 mm</strong></td><td>56.5 mm</td><td>34.8 mm/f²</td></tr>
           <tr><td>the 12 true points (oracle, E4 b)</td><td>0 px</td><td>67.7 mm</td><td>47.0 mm</td><td>20.6 mm/f²</td></tr>
         </tbody>
       </table>
@@ -437,7 +437,7 @@
 
     <!-- ===================================================================== -->
     <h2 id="conclusions">Conclusions and Next Steps</h2>
-    <p>On daily-life observer video, SAM 3D Body is accurate enough to follow the body but not to be trusted joint by joint: it jitters, and its occluded wrists and toes carry sustained errors that a filter cannot remove (Chapter 4). Its own promptable decoder is a strong lever: the true key points lower the error by 27 %, mostly through joints that are visible (E4). A small network that rewrites those prompts from the model's own latent, trained through the frozen decoder, recovers 57 % of that gain on a person it never saw (E6), by learning the points that help the decoder rather than where the joints are.</p>
+    <p>On daily-life observer video, SAM 3D Body is accurate enough to follow the body but not to be trusted joint by joint: it jitters, and its occluded wrists and toes carry sustained errors that a filter cannot remove (Chapter 4). Its own promptable decoder is a strong lever: the true key points lower the error by 27 %, mostly through joints that are visible (E4). A small network that rewrites those prompts from the model's own latent, trained through the frozen decoder, recovers 57 % of that gain on a person it never saw (E6), by learning the points that help the decoder rather than where the joints are. It does not yet improve the shape of the pose (PA-MPJPE) and it adds jitter, because each frame is corrected on its own.</p>
     <h3>Limitations</h3>
     <ul>
       <li>The person box comes from the ground truth; no detector yet (A7).</li>
@@ -446,7 +446,7 @@
     </ul>
     <h3>Next steps</h3>
     <ul>
-      <li>PA-MPJPE and acceleration error of E6, then the test people.</li>
+      <li>The test people, and a correction that is consistent over time, to remove the jitter that P3b adds (A10, A13).</li>
       <li>A longer temporal context at almost no cost: the predicted points of \(t\pm16\) frames, so the network sees where a joint was the last time it was visible (A10).</li>
       <li>Phase C: 3DPW vs NymeriaPlus, the lens (A6) and a real detector (A7).</li>
       <li>Extract the clip library (992 clips) and repeat the atlas with the 79 actions.</li>
