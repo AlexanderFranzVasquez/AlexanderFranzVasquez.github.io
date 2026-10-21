@@ -12,7 +12,11 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
-<style>.article-fig.portrait video { max-width: 380px; }</style>
+<style>
+  .article-fig.portrait video { max-width: 380px; }
+  /* letters that form the name STRIDE */
+  .acr { color: var(--accent); text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 5px; }
+</style>
 </head>
 <body>
 
@@ -34,7 +38,7 @@
 
 <main>
   <div class="article-head">
-    <h1>STRIDE: Can a Single-Image 3D Human Pose Model Be Trusted on Daily-Life Video?</h1>
+    <h1>STRIDE: Can a <span class="acr">S</span>ingle-Image 3D Human Pose Model Be <span class="acr">Tr</span>usted on Da<span class="acr">i</span>ly-Life Vi<span class="acr">de</span>o?</h1>
     <p class="dek">Research decision book of our Deep Learning course project: we evaluate SAM 3D Body on NymeriaPlus video against motion-capture ground truth, find where it fails, and correct it from inside the model by rewriting the key-point prompts of its decoder.</p>
   </div>
 
@@ -68,7 +72,7 @@
     <h2 id="abstract">Abstract</h2>
     <div class="abstract-block">
       <p>Motion capture is too expensive to collect enough data to feed the imitation-learning loop of humanoid robots, so one option is to extract motion from videos of daily routines. We study whether SAM 3D Body<a class="cite" href="#ref-1">[1]</a>, a single-image 3D human pose model, can be trusted on such video, and how to correct it where it fails. We use NymeriaPlus<a class="cite" href="#ref-3">[3,4]</a>: a moving observer records a participant with fisheye glasses while an inertial suit captures the true motion, already in the skeleton that SAM 3D Body predicts (MHR<a class="cite" href="#ref-2">[2]</a>).</p>
-      <p>On 67 clips (20 165 frames, 10 people, 13 movement categories) SAM 3D Body reaches 86.9 mm of MPJPE and jitters; its worst joints are the wrists and the toes, and on an occluded wrist the error is a sustained offset that a classical filter does not fix. Giving its promptable decoder the 12 true key points lowers MPJPE by 27 %, and most of that gain comes from joints that are visible. A small Transformer that corrects SAM 3D Body's own 12 key points from its latent, with SAM 3D Body frozen, lowers MPJPE on a held-out person from 86.6 to 80.9 mm when trained in 2D, and to 75.9 mm when fine-tuned in 3D through the frozen decoder: 57 % of the oracle's gain.</p>
+      <p>On 67 clips (20 165 frames, 10 people, 13 movement categories) SAM 3D Body reaches 86.9 mm of MPJPE and jitters; its worst joints are the wrists and the toes, and on an occluded wrist the error is a sustained offset that a classical filter does not fix. Giving its promptable decoder the 12 true key points lowers MPJPE by 27 %, and most of that gain comes from joints that are visible. A small Transformer that corrects SAM 3D Body's own 12 key points from its latent, with SAM 3D Body frozen, lowers MPJPE on two people it never saw from 84.2 to 77.3 mm when trained in 2D, and to 72.6 mm when fine-tuned in 3D through the frozen decoder: 44 % of the oracle's gain. The 3D fine-tuning, however, moves the body away from its true position (pelvis error 118 → 195 mm), which the pelvis-aligned metric does not see.</p>
       <p><strong>Keywords:</strong> 3D human pose, SAM 3D Body, promptable decoder, egocentric video, occlusion, NymeriaPlus, MHR.</p>
     </div>
 
@@ -389,7 +393,7 @@
       <img src="../assets/img/projects/stride-book/e6_training.webp" alt="E6 training: validation MPJPE and 2D error per epoch" loading="lazy">
       <figcaption><strong>Figure 15.</strong> E6 per epoch. Left: MPJPE (train and validation) with the baseline, E5 and the oracle as references. Right: mean 2D error of the corrected points.</figcaption>
     </figure>
-    <p>Table 9 puts the whole Phase B on the same 900 validation frames. <strong>Held?</strong> Yes: the 3D error improves over E5 (80.9 → 75.9 mm), and P3b now recovers ~57 % of the oracle's gain (10.7 of 18.9 mm). The gain is concentrated where SAM 3D Body failed most: the left wrist goes from 156 to 134 mm, the right wrist from 145 to 111 mm and the head from 113 to 76 mm, while the right toes get worse (107 → 124 mm). Two things do not improve. PA-MPJPE stays at 56.5 mm, as in E5, while the oracle lowers it by 9 mm: the gain of P3b is in how the body is placed and oriented relative to the pelvis, not in the shape of the pose (not checked further). And the jitter rises more than in E5 (26.6 → 34.8 mm/frame²): each frame is still corrected on its own, now with points farther from the joints. The test people are not measured yet.</p>
+    <p>Table 9 puts the whole Phase B on the same 900 validation frames. <strong>Held?</strong> Yes: the 3D error improves over E5 (80.9 → 75.9 mm), and P3b now recovers ~57 % of the oracle's gain (10.7 of 18.9 mm). The gain is concentrated where SAM 3D Body failed most: the left wrist goes from 156 to 134 mm, the right wrist from 145 to 111 mm and the head from 113 to 76 mm, while the right toes get worse (107 → 124 mm). Two things do not improve. PA-MPJPE stays at 56.5 mm, as in E5, while the oracle lowers it by 9 mm: the gain of P3b is in how the body is placed and oriented relative to the pelvis, not in the shape of the pose (not checked further). And the jitter rises more than in E5 (26.6 → 34.8 mm/frame²): each frame is still corrected on its own, now with points farther from the joints. These are numbers on one validation person; next, the people the network has never seen.</p>
     <div class="table-scroll">
       <table>
         <caption>Table 9. Phase B on the validation person (900 frames).</caption>
@@ -403,12 +407,49 @@
       </table>
     </div>
 
-    <!-- ===================================================================== -->
-    <h2 id="chapter6">Chapter 6: Ablations</h2>
-    <p>Each ablation changes one thing at a time, and its hypothesis is written by the team before running it. Table 10 lists them. A1–A3 and A5 were planned for the temporal module of D11 and are not run (D17); A8–A13 are the ablations of P3b.</p>
+    <h3>On people the network has never seen</h3>
+    <p>The validation person chose the model (the best epoch of E6); the two test people, frank (jog, run) and maria (dance), were never used for training or for any choice. Table 10 gives the result on their 12 clips (2 939 frames). On them P3b fine-tuned in 3D lowers MPJPE from 84.2 to 72.6 mm, 44 % of the oracle's gain (11.6 of 26.2 mm), a bit less than the 57 % of the single validation person. It improves both people (frank 79.4 → 69.2 mm, maria 97.4 → 81.9 mm) and each of the 12 clips: in all of them the order is the same, baseline > Savitzky-Golay > P3b 2D > P3b 3D, and Savitzky-Golay never gains more than 0.9 mm. Unlike on the validation person, PA-MPJPE improves too (60.1 → 52.5 mm): in jog, run and dance the shape of the pose also gets better. The jitter, again, rises (16.3 → 24.5 mm/frame²).</p>
     <div class="table-scroll">
       <table>
-        <caption>Table 10. Planned ablations.</caption>
+        <caption>Table 10. Phase B on the test people (12 clips, 2 939 frames).</caption>
+        <thead><tr><th>SAM 3D Body with…</th><th>MPJPE</th><th>PA-MPJPE</th><th>Accel. error</th></tr></thead>
+        <tbody>
+          <tr><td>nothing (baseline)</td><td>84.2 mm</td><td>60.1 mm</td><td>16.3 mm/f²</td></tr>
+          <tr><td>P3b, 2D loss (E5)</td><td>77.3 mm</td><td>54.0 mm</td><td>19.4 mm/f²</td></tr>
+          <tr><td>P3b, 3D fine-tuning (E6)</td><td><strong>72.6 mm</strong></td><td><strong>52.5 mm</strong></td><td>24.5 mm/f²</td></tr>
+          <tr><td>the 12 true points (oracle)</td><td>58.0 mm</td><td>40.8 mm</td><td>10.8 mm/f²</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Figures 16 and 17 show two test clips with every model as a body mesh. Each column is one model: on top, its mesh over the image; below, its mesh (in its colour) over the participant's real mesh (green), aligned at the pelvis and seen from the front and from the side; at the bottom, the error of every model frame by frame, with a cursor. Two things can be read in them. First, the side view, which the image cannot show: in the running clip the baseline (grey) leans away from the real body, and P3b 3D (yellow) almost covers it; in the curves, yellow stays below the other models for most of both clips, while Savitzky-Golay (orange) runs on top of the baseline. Second, the image on top: the yellow mesh is shifted with respect to the person, while the baseline sits on it.</p>
+    <figure class="article-fig wide">
+      <video src="../assets/video/projects/stride-book/compare_mesh_dance_07.mp4" controls muted loop playsinline preload="metadata"></video>
+      <figcaption><strong>Figure 16.</strong> Test clip dance_07 (maria, 4 s). Columns: SAM 3D Body, Savitzky-Golay, P3b 2D, P3b 3D, with the clip's MPJPE. Top: predicted mesh over the image. Middle: predicted mesh over the real mesh (green), pelvis-aligned, front and side. Bottom: per-frame MPJPE.</figcaption>
+    </figure>
+    <figure class="article-fig wide">
+      <video src="../assets/video/projects/stride-book/compare_mesh_run_07.mp4" controls muted loop playsinline preload="metadata"></video>
+      <figcaption><strong>Figure 17.</strong> Test clip run_07 (frank, 20 s), same layout as Figure 16.</figcaption>
+    </figure>
+    <p>That shift is real, and our MPJPE does not see it, because it aligns the pelvis before measuring. Table 11 measures it with two numbers the pelvis alignment hides: how far the predicted pelvis is from the true one, and how far the 18 predicted joints fall from the true ones in the image. P3b 2D improves both on the test people. P3b 3D makes both worse: its 3D loss only looks at the pose relative to the pelvis, so the network learned to improve that pose while moving the whole body away from where it is (the pelvis ends 7.7 cm farther from its place than with the baseline). The 3D loss needs a term for the position of the body, or for the image, as the next step of P3b.</p>
+    <div class="table-scroll">
+      <table>
+        <caption>Table 11. What the pelvis-aligned MPJPE does not see: error of the pelvis position, and 2D reprojection error of the 18 body joints (validation / test).</caption>
+        <thead><tr><th>SAM 3D Body with…</th><th>Pelvis position error</th><th>2D reprojection error</th></tr></thead>
+        <tbody>
+          <tr><td>nothing (baseline)</td><td>237.6 / 117.9 mm</td><td>11.3 / 14.8 px</td></tr>
+          <tr><td>P3b, 2D loss (E5)</td><td>243.1 / <strong>85.5 mm</strong></td><td><strong>5.2 / 11.2 px</strong></td></tr>
+          <tr><td>P3b, 3D fine-tuning (E6)</td><td>313.2 / 195.3 mm</td><td>10.4 / 15.7 px</td></tr>
+          <tr><td>the 12 true points (oracle)</td><td>228.0 / 61.9 mm</td><td>2.7 / 4.2 px</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ===================================================================== -->
+    <h2 id="chapter6">Chapter 6: Ablations</h2>
+    <p>Each ablation changes one thing at a time, and its hypothesis is written by the team before running it. Table 12 lists them. A1–A3 and A5 were planned for the temporal module of D11 and are not run (D17); A8–A13 are the ablations of P3b.</p>
+    <div class="table-scroll">
+      <table>
+        <caption>Table 12. Planned ablations.</caption>
         <thead><tr><th>Id</th><th>Change</th><th>Metric</th><th>Hypothesis (team)</th><th>Status</th></tr></thead>
         <tbody>
           <tr><td>A1</td><td>Temporal window T = 1 vs 8 / 16 / 32</td><td>MPJPE, accel. error</td><td></td><td>not run (D17)</td></tr>
@@ -437,16 +478,17 @@
 
     <!-- ===================================================================== -->
     <h2 id="conclusions">Conclusions and Next Steps</h2>
-    <p>On daily-life observer video, SAM 3D Body is accurate enough to follow the body but not to be trusted joint by joint: it jitters, and its occluded wrists and toes carry sustained errors that a filter cannot remove (Chapter 4). Its own promptable decoder is a strong lever: the true key points lower the error by 27 %, mostly through joints that are visible (E4). A small network that rewrites those prompts from the model's own latent, trained through the frozen decoder, recovers 57 % of that gain on a person it never saw (E6), by learning the points that help the decoder rather than where the joints are. It does not yet improve the shape of the pose (PA-MPJPE) and it adds jitter, because each frame is corrected on its own.</p>
+    <p>On daily-life observer video, SAM 3D Body is accurate enough to follow the body but not to be trusted joint by joint: it jitters, and its occluded wrists and toes carry sustained errors that a filter cannot remove (Chapter 4). Its own promptable decoder is a strong lever: the true key points lower the error by 27 %, mostly through joints that are visible (E4). A small network that rewrites those prompts from the model's own latent, trained through the frozen decoder, recovers 44 % of that gain on two people it never saw (E6), by learning the points that help the decoder rather than where the joints are. It pays for it in two ways: it adds jitter, because each frame is corrected on its own, and it moves the body away from its true position, because its 3D loss only looks at the pose relative to the pelvis (Table 11).</p>
     <h3>Limitations</h3>
     <ul>
       <li>The person box comes from the ground truth; no detector yet (A7).</li>
       <li>The measured occlusion is only self-occlusion: furniture, objects and other people are not counted.</li>
-      <li>P3b is trained on 7 people and validated on 1, in one category; it overfits after a few epochs (E5, E6). The test people and a leave-one-person-out cross-validation are still to come.</li>
+      <li>P3b is trained on 7 people, validated on 1 and tested on 2; it overfits after a few epochs (E5, E6). A leave-one-person-out cross-validation is still to come.</li>
     </ul>
     <h3>Next steps</h3>
     <ul>
-      <li>The test people, and a correction that is consistent over time, to remove the jitter that P3b adds (A10, A13).</li>
+      <li>A 3D loss that also includes the position of the body or the 2D reprojection, so that P3b stops moving the body away from its place (Table 11).</li>
+      <li>A correction that is consistent over time, to remove the jitter that P3b adds (A10, A13).</li>
       <li>A longer temporal context at almost no cost: the predicted points of \(t\pm16\) frames, so the network sees where a joint was the last time it was visible (A10).</li>
       <li>Phase C: 3DPW vs NymeriaPlus, the lens (A6) and a real detector (A7).</li>
       <li>Extract the clip library (992 clips) and repeat the atlas with the 79 actions.</li>
