@@ -59,8 +59,9 @@
       <li><a href="#chapter3">Chapter 3: Phase A, Opening the Model</a></li>
       <li><a href="#chapter4">Chapter 4: Where SAM 3D Body Fails on Video</a></li>
       <li><a href="#chapter5">Chapter 5: Phase B, Correcting the Decoder's Prompts</a></li>
-      <li><a href="#chapter6">Chapter 6: Ablations</a></li>
-      <li><a href="#chapter7">Chapter 7: Phase C, Domain Shift (Planned)</a></li>
+      <li><a href="#chapter6">Chapter 6: What Reaches the Robot</a></li>
+      <li><a href="#chapter7">Chapter 7: Ablations</a></li>
+      <li><a href="#chapter8">Chapter 8: Phase C, Domain Shift (Planned)</a></li>
       <li><a href="#conclusions">Conclusions and Next Steps</a></li>
       <li><a href="#ai">Use of AI Assistance and Data</a></li>
       <li><a href="#references">References</a></li>
@@ -72,7 +73,7 @@
     <h2 id="abstract">Abstract</h2>
     <div class="abstract-block">
       <p>Motion capture is too expensive to collect enough data to feed the imitation-learning loop of humanoid robots, so one option is to extract motion from videos of daily routines. We study whether SAM 3D Body<a class="cite" href="#ref-1">[1]</a>, a single-image 3D human pose model, can be trusted on such video, and how to correct it where it fails. We use NymeriaPlus<a class="cite" href="#ref-3">[3,4]</a>: a moving observer records a participant with fisheye glasses while an inertial suit captures the true motion, already in the skeleton that SAM 3D Body predicts (MHR<a class="cite" href="#ref-2">[2]</a>).</p>
-      <p>On 67 clips (20 165 frames, 10 people, 13 movement categories) SAM 3D Body reaches 86.9 mm of MPJPE and jitters; its worst joints are the wrists and the toes, and on an occluded wrist the error is a sustained offset that a classical filter does not fix. Giving its promptable decoder the 12 true key points lowers MPJPE by 27 %, and most of that gain comes from joints that are visible. A small Transformer that corrects SAM 3D Body's own 12 key points from its latent, with SAM 3D Body frozen, lowers MPJPE on two people it never saw from 84.2 to 77.3 mm when trained in 2D, and to 72.6 mm when fine-tuned in 3D through the frozen decoder: 44 % of the oracle's gain. The 3D fine-tuning, however, moves the body away from its true position (pelvis error 118 → 195 mm), which the pelvis-aligned metric does not see.</p>
+      <p>On 67 clips (20 165 frames, 10 people, 13 movement categories) SAM 3D Body reaches 86.9 mm of MPJPE and jitters; its worst joints are the wrists and the toes, and on an occluded wrist the error is a sustained offset that a classical filter does not fix. Giving its promptable decoder the 12 true key points lowers MPJPE by 27 %, and most of that gain comes from joints that are visible. A small Transformer that corrects SAM 3D Body's own 12 key points from its latent, with SAM 3D Body frozen, lowers MPJPE on two people it never saw from 84.2 to 77.3 mm when trained in 2D, and to 72.6 mm when fine-tuned in 3D through the frozen decoder: 44 % of the oracle's gain. The 3D fine-tuning, however, moves the body away from its true position (pelvis error 118 → 195 mm), which the pelvis-aligned metric does not see; on the Unitree G1, after retargeting, P3b's gain almost vanishes and a filter before retargeting gives the smoothest motion with the least foot sliding.</p>
       <p><strong>Keywords:</strong> 3D human pose, SAM 3D Body, promptable decoder, egocentric video, occlusion, NymeriaPlus, MHR.</p>
     </div>
 
@@ -84,7 +85,7 @@
     <p>Given this dataset, the question is how to extract the trajectory of each human joint in order to build the trajectory of the whole body. For this project we use SAM 3D Body<a class="cite" href="#ref-1">[1]</a>. Because of occlusion, frame-by-frame processing and camera movement, the main research question is whether SAM 3D Body, a single-image model, can be trusted on video, and how to correct it where it fails. Specifically we ask: which trajectories are not good? How can we improve them?</p>
 
     <h3>How this book is organised</h3>
-    <p>This Research Decision Book follows the process we have followed since the start of the project. Chapter 1 answers <em>which data do we use?</em>; Chapter 2, <em>which model, and how do we run it?</em> The course asks for three phases, and the next chapters follow them: Phase A opens the model (Chapter 3); before intervening we measure where it fails (Chapter 4); Phase B intervenes in its core (Chapter 5) with controlled ablations (Chapter 6); Phase C stresses it out of its domain (Chapter 7).</p>
+    <p>This Research Decision Book follows the process we have followed since the start of the project. Chapter 1 answers <em>which data do we use?</em>; Chapter 2, <em>which model, and how do we run it?</em> The course asks for three phases, and the next chapters follow them: Phase A opens the model (Chapter 3); before intervening we measure where it fails (Chapter 4); Phase B intervenes in its core (Chapter 5); Chapter 6 checks what of it reaches the robot after retargeting; the controlled ablations follow (Chapter 7); Phase C stresses it out of its domain (Chapter 8).</p>
     <p>Every design decision is recorded with its justification, the alternatives we discarded, and where an AI assistant was used. Decisions are labelled D1, D2, … in the order they appear in this story; experiments already run are E1, E2, …; planned ablations are A1, A2, …. Each ablation has its hypothesis written by the team <strong>before</strong> running it, followed by the result and whether it held. Table 1 is the index.</p>
     <div class="table-scroll">
       <table>
@@ -111,6 +112,8 @@
           <tr><td>D16</td><td>Store the full encoder latent</td><td>2026-10-21</td><td>5</td></tr>
           <tr><td>D17</td><td>The intervention is P3b only; everything runs locally</td><td>2026-10-21</td><td>5</td></tr>
           <tr><td>E5, E6</td><td>P3b trained in 2D; P3b fine-tuned in 3D</td><td>2026-10-21</td><td>5</td></tr>
+          <tr><td>E7</td><td>P3b v2: body position in the loss, whole body, long window</td><td>2026-10-21</td><td>5</td></tr>
+          <tr><td>E8</td><td>Retargeting to the Unitree G1</td><td>2026-10-21</td><td>6</td></tr>
         </tbody>
       </table>
     </div>
@@ -444,12 +447,87 @@
       </table>
     </div>
 
-    <!-- ===================================================================== -->
-    <h2 id="chapter6">Chapter 6: Ablations</h2>
-    <p>Each ablation changes one thing at a time, and its hypothesis is written by the team before running it. Table 12 lists them. A1–A3 and A5 were planned for the temporal module of D11 and are not run (D17); A8–A13 are the ablations of P3b.</p>
+    <h3>E7. P3b v2: the body position in the loss, the whole body as input, a long window</h3>
+    <p>Three changes at once over E6, run together by the team's choice (so if it improves, we cannot say which change did it): the loss adds the 2D reprojection error of the 18 body joints, so that the body stays where it is in the image (Table 11); the network also reads SAM 3D Body's whole predicted body (29 joints, no face, fingers or twist bones, 2D and 3D); and it reads that body over a window of t ± 16 frames (~1 s). <strong>Hypothesis (team, written before running):</strong> the body position error will improve, the MPJPE will go down, and the ±16-frame window will reduce the jitter. Before any result, we cleaned one input problem: in two training clips some predicted joints lie almost on the camera plane and their image projection explodes, so depths are kept ≥ 10 cm and the projections bounded.</p>
+    <p>Table 12 gives the result on the test people. <strong>Held in part.</strong> The body position comes back: the pelvis error falls from 195.3 to 97.3 mm, better than the baseline's 117.9, and the reprojection from 15.7 to 11.6 px. The MPJPE does not go down with respect to E6 (72.6 → 73.8 mm on test, 75.9 → 75.5 on validation), although it stays 10.4 mm below the baseline. The jitter is not reduced (24.5 → 24.1, still above the baseline's 16.3): the long window did not bring smoothness.</p>
     <div class="table-scroll">
       <table>
-        <caption>Table 12. Planned ablations.</caption>
+        <caption>Table 12. E7 on the test people, next to the other models (12 clips, 2 939 frames; validation MPJPE in the first column).</caption>
+        <thead><tr><th>SAM 3D Body with…</th><th>Val MPJPE</th><th>MPJPE</th><th>PA-MPJPE</th><th>Accel. error</th><th>Pelvis position</th><th>Reprojection</th></tr></thead>
+        <tbody>
+          <tr><td>nothing (baseline)</td><td>86.6</td><td>84.2 mm</td><td>60.1 mm</td><td>16.3 mm/f²</td><td>117.9 mm</td><td>14.8 px</td></tr>
+          <tr><td>P3b 2D (E5)</td><td>80.9</td><td>77.3</td><td>54.0</td><td>19.4</td><td>85.5</td><td>11.2</td></tr>
+          <tr><td>P3b 3D (E6)</td><td>75.9</td><td><strong>72.6</strong></td><td><strong>52.5</strong></td><td>24.5</td><td>195.3</td><td>15.7</td></tr>
+          <tr><td><strong>P3b v2 (E7)</strong></td><td><strong>75.5</strong></td><td>73.8</td><td>53.4</td><td>24.1</td><td>97.3</td><td>11.6</td></tr>
+          <tr><td>the 12 true points (oracle)</td><td>67.7</td><td>58.0</td><td>40.8</td><td>10.8</td><td>61.9</td><td>4.2</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ===================================================================== -->
+    <h2 id="chapter6">Chapter 6: What Reaches the Robot</h2>
+    <p>The goal is motion a humanoid can imitate, and the motion is retargeted to the robot afterwards. Our view was that any of these models may give the same retarget, or ours a worse one, so we checked it on the Unitree G1. Before that, one more look at the human side, on the clip we have used since the start.</p>
+
+    <h3>On the training clip dance_salsa_01</h3>
+    <p>dance_salsa_01 belongs to kevin, a <strong>training person</strong>: P3b saw this very clip during training. Figure 18 shows it with the meshes, in the layout of Figures 16 and 17. Here P3b 3D reaches 47.9 mm of MPJPE, better than the oracle with the true points (59.7 mm). This is not generalisation: the network memorised the clip. On people it never saw it gives 72.6 mm (Table 10). The clip is shown because it is the one of E1–E3, not as evidence for P3b.</p>
+    <figure class="article-fig wide">
+      <video src="../assets/video/projects/stride-book/compare_mesh_dance_salsa_01.mp4" controls muted loop playsinline preload="metadata"></video>
+      <figcaption><strong>Figure 18.</strong> dance_salsa_01, <strong>training person</strong> (20 s from second 18). Same layout as Figure 16; clip MPJPE: SAM 3D Body 84.0, Savitzky-Golay 83.7, P3b 2D 66.3, P3b 3D 47.9 mm.</figcaption>
+    </figure>
+
+    <h3>E8. Retargeting to the Unitree G1</h3>
+    <p><strong>Setup.</strong> Two clips: run_07 (test person) and dance_salsa_01 (training person, the most favourable case for P3b). Six motions per clip, and two more for E7 once it finished, all through the same retargeter (the GMR-based pipeline of our tasknpoint project, G1 with 27 degrees of freedom): (1) the ground truth, NymeriaPlus' own SMPL fit of the XSens motion; (2) SAM 3D Body and (3) P3b 3D, whose meshes are moved to the world with the true camera pose and fitted with SMPL-X by Meta's MHR → SMPL(X) tool (fitting error 0.9–1.6 cm); (4) E3, Savitzky-Golay on SAM 3D Body's meshes <em>before</em> retargeting; (5) SAM 3D Body and (6) P3b 3D with the same filter on the robot's base and joint angles <em>after</em> retargeting. Each model is compared with the retargeted ground truth: joint angle error; vibration (joint acceleration, share of the signal above 5 Hz, frames with a joint jump); and foot sliding, the horizontal speed of a foot while the ground-truth robot's foot is planted.</p>
+    <p>Figures 19 and 20 show the eight robots side by side. The ground-truth robot moves smoothly, while SAM 3D Body and P3b 3D tremble; the filtered robots look as smooth as the ground truth. Tables 13 and 14 put numbers on it.</p>
+    <figure class="article-fig wide">
+      <video src="../assets/video/projects/stride-book/g1_grid_run_07.mp4" controls muted loop playsinline preload="metadata"></video>
+      <figcaption><strong>Figure 19.</strong> run_07, test person: the motions retargeted to the G1. Top: ground truth, SAM 3D Body, P3b 3D (E6), P3b v2 (E7). Bottom: SAM 3D Body filtered before retargeting (E3), and SAM 3D Body, P3b 3D and P3b v2 filtered after.</figcaption>
+    </figure>
+    <figure class="article-fig wide">
+      <video src="../assets/video/projects/stride-book/g1_grid_dance_salsa_01.mp4" controls muted loop playsinline preload="metadata"></video>
+      <figcaption><strong>Figure 20.</strong> dance_salsa_01, <strong>training person</strong> (20 s from second 18), same layout as Figure 19.</figcaption>
+    </figure>
+    <div class="table-scroll">
+      <table>
+        <caption>Table 13. E8 on run_07 (test person, 600 frames), against the retargeted ground truth.</caption>
+        <thead><tr><th>Motion</th><th>Joint angle error</th><th>Joint jitter</th><th>Power &gt; 5 Hz</th><th>Frames with a jump &gt; 5°/f²</th><th>Foot sliding</th></tr></thead>
+        <tbody>
+          <tr><td>ground truth</td><td>—</td><td>1.37 °/f²</td><td>1.03 %</td><td>55 %</td><td>5.9 cm/s</td></tr>
+          <tr><td>SAM 3D Body</td><td>12.9°</td><td>2.98</td><td>2.98 %</td><td>98 %</td><td>53.2</td></tr>
+          <tr><td>P3b 3D (E6)</td><td><strong>11.6°</strong></td><td>3.80</td><td>4.36 %</td><td>99 %</td><td>108.4</td></tr>
+          <tr><td>E3: filtered before retargeting</td><td>12.9°</td><td>1.12</td><td>0.55 %</td><td>34 %</td><td><strong>29.8</strong></td></tr>
+          <tr><td>SAM 3D Body, filtered after</td><td>12.8°</td><td>0.97</td><td>0.41 %</td><td>27 %</td><td>44.8</td></tr>
+          <tr><td>P3b 3D, filtered after</td><td><strong>11.5°</strong></td><td>1.04</td><td>0.35 %</td><td>23 %</td><td>68.7</td></tr>
+          <tr><td>P3b v2 (E7)</td><td>12.3°</td><td>3.80</td><td>4.33 %</td><td>100 %</td><td>90.1</td></tr>
+          <tr><td>P3b v2 (E7), filtered after</td><td>12.1°</td><td>1.05</td><td>0.37 %</td><td>25 %</td><td>58.5</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <caption>Table 14. E8 on dance_salsa_01 (training person, 1 801 frames).</caption>
+        <thead><tr><th>Motion</th><th>Joint angle error</th><th>Joint jitter</th><th>Power &gt; 5 Hz</th><th>Frames with a jump &gt; 5°/f²</th><th>Foot sliding</th></tr></thead>
+        <tbody>
+          <tr><td>ground truth</td><td>—</td><td>0.75 °/f²</td><td>0.10 %</td><td>10 %</td><td>4.8 cm/s</td></tr>
+          <tr><td>SAM 3D Body</td><td>10.5°</td><td>2.25</td><td>1.36 %</td><td>86 %</td><td>27.9</td></tr>
+          <tr><td>P3b 3D (E6)</td><td>10.0°</td><td>2.74</td><td>1.45 %</td><td>96 %</td><td>48.2</td></tr>
+          <tr><td>E3: filtered before retargeting</td><td>10.4°</td><td>0.94</td><td>0.18 %</td><td>15 %</td><td><strong>13.6</strong></td></tr>
+          <tr><td>SAM 3D Body, filtered after</td><td>10.4°</td><td>0.61</td><td>0.08 %</td><td>9 %</td><td>31.7</td></tr>
+          <tr><td>P3b 3D, filtered after</td><td>10.0°</td><td>0.66</td><td>0.07 %</td><td>10 %</td><td>40.3</td></tr>
+          <tr><td>P3b v2 (E7)</td><td>9.7°</td><td>2.73</td><td>1.43 %</td><td>94 %</td><td>43.0</td></tr>
+          <tr><td>P3b v2 (E7), filtered after</td><td>9.6°</td><td>0.67</td><td>0.07 %</td><td>11 %</td><td>40.7</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>The data confirm what the videos show. The ground truth does not vibrate, and SAM 3D Body and P3b do: their share of signal above 5 Hz is 13–14 times the ground truth's on dance_salsa_01 and 3–4 times on run_07, and almost every frame has a joint jump. Any of the three filters brings the vibration down to the ground truth's level, but none changes the joint angle error (12.8–12.9° on run_07): filtering removes the jitter, not the error, as E3 found on the human side. P3b lowers the joint angle error only a little (12.9 → 11.6° on run_07; 10.5 → 10.0° on dance_salsa_01, where it saw the clip), far less than its MPJPE gain, and it doubles the foot sliding. The feet slide least when the human pose is filtered <em>before</em> retargeting (29.8 and 13.6 cm/s); filtering the robot's angles afterwards helps less.</p>
+    <p>The retargeter also has problems of its own, visible with the ground truth itself: the robot's feet float above the floor (median 8.1 and 6.8 cm on dance_salsa_01), and it removes the whole orientation of the first frame, tilt included, so the base of a runner who starts leaning forward climbs (run_07: from 0.78 to 2.0 m). For that reason the base trajectory and the foot height of run_07 are not reported; joint angles, vibration and horizontal sliding do not depend on it.</p>
+    <p><strong>Reading.</strong> What reaches the robot is the jitter and the foot sliding, not the pelvis-aligned MPJPE. On the robot, P3b's gain is small and its jitter and sliding are worse, while a filter before retargeting is the best on both clips. E7, which places the body better, slides less than E6 (90.1 vs 108.4 cm/s on run_07) but still more than the baseline, with the same jitter. The combination not run yet is P3b with a filter before retargeting. Limitations: two clips; the ground truth and the models reach SMPL-X through different fits; the retargeter's first-frame alignment.</p>
+
+    <!-- ===================================================================== -->
+    <h2 id="chapter7">Chapter 7: Ablations</h2>
+    <p>Each ablation changes one thing at a time, and its hypothesis is written by the team before running it. Table 15 lists them. A1–A3 and A5 were planned for the temporal module of D11 and are not run (D17); A8–A13 are the ablations of P3b.</p>
+    <div class="table-scroll">
+      <table>
+        <caption>Table 15. Planned ablations.</caption>
         <thead><tr><th>Id</th><th>Change</th><th>Metric</th><th>Hypothesis (team)</th><th>Status</th></tr></thead>
         <tbody>
           <tr><td>A1</td><td>Temporal window T = 1 vs 8 / 16 / 32</td><td>MPJPE, accel. error</td><td></td><td>not run (D17)</td></tr>
@@ -470,7 +548,7 @@
     </div>
 
     <!-- ===================================================================== -->
-    <h2 id="chapter7">Chapter 7: Phase C, Domain Shift (Planned)</h2>
+    <h2 id="chapter8">Chapter 8: Phase C, Domain Shift (Planned)</h2>
     <ul>
       <li>SAM 3D Body on 3DPW<a class="cite" href="#ref-10">[10]</a> (reproducing the paper's number) vs on NymeriaPlus: how much worse, and how much of the gap the lens (A6), the box (A7), distance and occlusion explain.</li>
       <li>Failure catalogue: clips where P3b makes things worse, and why.</li>
@@ -478,7 +556,7 @@
 
     <!-- ===================================================================== -->
     <h2 id="conclusions">Conclusions and Next Steps</h2>
-    <p>On daily-life observer video, SAM 3D Body is accurate enough to follow the body but not to be trusted joint by joint: it jitters, and its occluded wrists and toes carry sustained errors that a filter cannot remove (Chapter 4). Its own promptable decoder is a strong lever: the true key points lower the error by 27 %, mostly through joints that are visible (E4). A small network that rewrites those prompts from the model's own latent, trained through the frozen decoder, recovers 44 % of that gain on two people it never saw (E6), by learning the points that help the decoder rather than where the joints are. It pays for it in two ways: it adds jitter, because each frame is corrected on its own, and it moves the body away from its true position, because its 3D loss only looks at the pose relative to the pelvis (Table 11).</p>
+    <p>On daily-life observer video, SAM 3D Body is accurate enough to follow the body but not to be trusted joint by joint: it jitters, and its occluded wrists and toes carry sustained errors that a filter cannot remove (Chapter 4). Its own promptable decoder is a strong lever: the true key points lower the error by 27 %, mostly through joints that are visible (E4). A small network that rewrites those prompts from the model's own latent, trained through the frozen decoder, recovers 44 % of that gain on two people it never saw (E6), by learning the points that help the decoder rather than where the joints are. It pays for it in two ways: it adds jitter, because each frame is corrected on its own, and it moves the body away from its true position, because its 3D loss only looks at the pose relative to the pelvis (Table 11). Adding the reprojection to the loss (E7) brings the body back to its place at almost the same MPJPE, but not the smoothness. And after retargeting to the G1 (Chapter 6), what decides the quality of the robot's motion is the jitter and the foot sliding, not the MPJPE: there, a simple filter before retargeting beats every P3b variant.</p>
     <h3>Limitations</h3>
     <ul>
       <li>The person box comes from the ground truth; no detector yet (A7).</li>
@@ -487,7 +565,8 @@
     </ul>
     <h3>Next steps</h3>
     <ul>
-      <li>A 3D loss that also includes the position of the body or the 2D reprojection, so that P3b stops moving the body away from its place (Table 11).</li>
+      <li>P3b with a filter before retargeting, the combination not run yet (Chapter 6), and a baseline with an off-the-shelf 2D key-point detector (e.g. ViTPose) as prompts, to know whether P3b is needed at all.</li>
+      <li>In the retargeter, align only the heading of the first frame (not its tilt), so that the base trajectory of a moving person can be compared.</li>
       <li>A correction that is consistent over time, to remove the jitter that P3b adds (A10, A13).</li>
       <li>A longer temporal context at almost no cost: the predicted points of \(t\pm16\) frames, so the network sees where a joint was the last time it was visible (A10).</li>
       <li>Phase C: 3DPW vs NymeriaPlus, the lens (A6) and a real detector (A7).</li>
